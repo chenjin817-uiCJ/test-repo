@@ -397,7 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 添加全局图片点击事件委托
     document.addEventListener('click', function(e) {
-        console.log('Click detected on:', e.target.tagName, e.target);
+        // 只处理图片点击，不影响其他元素
         if (e.target.tagName === 'IMG' && e.target.hasAttribute('data-image-src')) {
             // 检查是否在模态框内，如果是则使用不同的处理方式
             const modal = e.target.closest('.modal');
@@ -2364,12 +2364,42 @@ function showEditOptionModal(optionId) {
     document.getElementById('editOptionCategory').value = option.category;
     document.getElementById('editOptionName').value = option.name;
     
-    document.getElementById('editOptionModal').classList.add('show');
+    const modal = document.getElementById('editOptionModal');
+    const modalContent = modal.querySelector('.modal-content');
+    
+    modal.classList.add('show');
+    modal.style.display = 'flex';
+    modal.style.pointerEvents = 'auto';
+    
+    // 确保模态框内容可以滚动
+    if (modalContent) {
+        modalContent.style.overflowY = 'auto';
+        modalContent.style.maxHeight = '80vh';
+        modalContent.style.height = 'auto';
+    }
+    
+    // 阻止背景页面滚动
+    preventBodyScroll();
 }
 
 // 关闭编辑选项模态框
 function closeEditOptionModal() {
-    document.getElementById('editOptionModal').classList.remove('show');
+    const modal = document.getElementById('editOptionModal');
+    const modalContent = modal.querySelector('.modal-content');
+    
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    modal.style.pointerEvents = '';
+    
+    // 恢复模态框内容样式
+    if (modalContent) {
+        modalContent.style.overflowY = '';
+        modalContent.style.maxHeight = '';
+        modalContent.style.height = '';
+    }
+    
+    // 恢复背景页面滚动
+    allowBodyScroll();
 }
 
 // 编辑选项
@@ -6040,6 +6070,12 @@ window.switchPage = function(page) {
         // 文档级委托，兜底确保点击可用
         if (!window._ocDocClickHandler) {
             window._ocDocClickHandler = function(e) {
+                // 检查是否在模态框内，如果是则不处理
+                const modal = e.target && e.target.closest ? e.target.closest('.modal') : null;
+                if (modal) {
+                    return; // 在模态框内，不处理点击事件
+                }
+                
                 const card = e.target && e.target.closest ? e.target.closest('.oc-card') : null;
                 if (card) {
                     const id = parseInt(card.getAttribute('data-id'));
