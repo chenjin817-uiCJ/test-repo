@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>办公椅配件 - 家具卖点字典</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .office-chair-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .page-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .category-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            border-color: #667eea;
+        }
+
+        .category-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .category-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .category-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .items-container {
+            display: none;
+            margin-top: 40px;
+        }
+
+        .items-container.active {
+            display: block;
+        }
+
+        .back-button {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            color: #495057;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .category-title-display {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .item-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .item-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .item-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #f8f9fa;
+        }
+
+        .item-content {
+            padding: 20px;
+            position: relative;
+        }
+
+        .item-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            padding-right: 50px;
+        }
+
+        .item-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .item-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .feature-tag {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .item-actions {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .edit-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .edit-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+            transform: translateY(-1px);
+        }
+
+        .no-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 3rem;
+        }
+
+        /* 编辑模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .features-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .feature-input-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feature-input-item input {
+            border: none;
+            background: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9rem;
+            width: auto;
+            min-width: 80px;
+        }
+
+        .remove-feature {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .add-feature-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .modal-footer {
+            padding: 20px 30px;
+            border-top: 1px solid #e1e5e9;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        @media (max-width: 768px) {
+            .categories-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 15px;
+            }
+
+            .category-card {
+                padding: 20px;
+            }
+
+            .category-icon {
+                font-size: 2.5rem;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .items-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="office-chair-container">
+        <!-- 页面头部 -->
+        <div class="page-header">
+            <h1 class="page-title">办公椅配件</h1>
+            <p class="page-subtitle">专业办公椅配件分类与详细介绍</p>
+        </div>
+
+        <!-- 分类网格 -->
+        <div class="categories-grid" id="categoriesGrid">
+            <!-- 头枕 -->
+            <div class="category-card" onclick="showCategory('headrest')">
+                <div class="category-icon">
+                    <i class="fas fa-head-side-brain"></i>
+                </div>
+                <div class="category-title">头枕</div>
+                <div class="category-description">提供头部支撑，缓解颈部疲劳，提升坐姿舒适度</div>
+            </div>
+
+            <!-- 扶手 -->
+            <div class="category-card" onclick="showCategory('armrest')">
+                <div class="category-icon">
+                    <i class="fas fa-hand-paper"></i>
+                </div>
+                <div class="category-title">扶手</div>
+                <div class="category-description">支撑手臂重量，提供舒适的手臂放置位置</div>
+            </div>
+
+            <!-- 靠背 -->
+            <div class="category-card" onclick="showCategory('backrest')">
+                <div class="category-icon">
+                    <i class="fas fa-backward"></i>
+                </div>
+                <div class="category-title">靠背</div>
+                <div class="category-description">支撑背部，维持正确坐姿，减少腰部压力</div>
+            </div>
+
+            <!-- 腰托 -->
+            <div class="category-card" onclick="showCategory('lumbar')">
+                <div class="category-icon">
+                    <i class="fas fa-spine"></i>
+                </div>
+                <div class="category-title">腰托</div>
+                <div class="category-description">专门支撑腰部，预防腰椎疾病，提升舒适度</div>
+            </div>
+
+            <!-- 坐垫 -->
+            <div class="category-card" onclick="showCategory('seat')">
+                <div class="category-icon">
+                    <i class="fas fa-chair"></i>
+                </div>
+                <div class="category-title">坐垫</div>
+                <div class="category-description">提供舒适的坐感，分散臀部压力，透气排湿</div>
+            </div>
+
+            <!-- 底盘 -->
+            <div class="category-card" onclick="showCategory('chassis')">
+                <div class="category-icon">
+                    <i class="fas fa-cogs"></i>
+                </div>
+                <div class="category-title">底盘</div>
+                <div class="category-description">椅子核心调节系统，控制高度和倾斜角度</div>
+            </div>
+
+            <!-- 五星脚 -->
+            <div class="category-card" onclick="showCategory('base')">
+                <div class="category-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="category-title">五星脚</div>
+                <div class="category-description">椅子支撑底座，提供稳定性和承重能力</div>
+            </div>
+
+            <!-- 椅轮 -->
+            <div class="category-card" onclick="showCategory('casters')">
+                <div class="category-icon">
+                    <i class="fas fa-circle"></i>
+                </div>
+                <div class="category-title">椅轮</div>
+                <div class="category-description">实现椅子移动，适应不同地面材质</div>
+            </div>
+        </div>
+
+        <!-- 配件详情容器 -->
+        <div id="itemsContainer" class="items-container">
+            <button class="back-button" onclick="showCategories()">
+                <i class="fas fa-arrow-left"></i> 返回分类
+            </button>
+            <h2 id="categoryTitleDisplay" class="category-title-display"></h2>
+            <div id="itemsGrid" class="items-grid"></div>
+        </div>
+    </div>
+
+    <!-- 编辑配件模态框 -->
+    <div class="modal" id="editItemModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>编辑配件</h2>
+                <button class="close-btn" onclick="closeEditModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editItemForm">
+                    <input type="hidden" id="editItemId">
+                    <input type="hidden" id="editItemCategory">
+                    <input type="hidden" id="editItemIndex">
+                    
+                    <div class="form-group">
+                        <label for="editItemTitle">配件名称</label>
+                        <input type="text" id="editItemTitle" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editItemDescription">配件描述</label>
+                        <textarea id="editItemDescription" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editItemImage">图片URL</label>
+                        <input type="url" id="editItemImage" placeholder="https://...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>功能特性</label>
+                        <div id="featuresContainer" class="features-input">
+                            <!-- 动态生成的功能特性输入框 -->
+                        </div>
+                        <button type="button" class="add-feature-btn" onclick="addFeatureInput()">
+                            <i class="fas fa-plus"></i> 添加特性
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="deleteItem()">
+                    <i class="fas fa-trash"></i> 删除
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveItem()">
+                    <i class="fas fa-save"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // 办公椅配件数据
+        const officeChairData = {
+            headrest: {
+                title: '头枕',
+                items: [
+                    {
+                        title: '固定头枕',
+                        description: '位置固定的头枕设计，提供稳定的头部支撑，适合长时间办公使用。采用人体工学设计，有效缓解颈部疲劳。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['固定位置', '颈部支撑', '人体工学', '长时间使用']
+                    },
+                    {
+                        title: '可调节头枕',
+                        description: '支持高度和角度调节的头枕，可根据个人身高和使用习惯进行调整，提供个性化的舒适体验。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['高度调节', '角度调节', '个性化', '舒适体验']
+                    }
+                ]
+            },
+            armrest: {
+                title: '扶手',
+                items: [
+                    {
+                        title: '固定扶手',
+                        description: '位置固定的扶手设计，提供稳定的手臂支撑。适合对扶手位置要求不高的用户，结构简单可靠。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['固定位置', '稳定支撑', '结构简单', '可靠耐用']
+                    },
+                    {
+                        title: '翻转扶手',
+                        description: '可向上翻转收起的扶手设计，节省空间，方便进出。支持扶手面角度调节，适应不同使用场景。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['翻转收起', '节省空间', '角度调节', '方便进出']
+                    },
+                    {
+                        title: '可调节扶手',
+                        description: '支持多维度调节的扶手系统，包括高度、宽度、深度和角度调节，提供最舒适的手臂支撑位置。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['高度调节', '宽度调节', '深度调节', '角度调节', '3D调节']
+                    }
+                ]
+            },
+            backrest: {
+                title: '靠背',
+                items: [
+                    {
+                        title: '整背靠背',
+                        description: '一体成型的靠背设计，提供完整的背部支撑。支持高度调节，适应不同身高用户需求。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['一体成型', '完整支撑', '高度调节', '适应性强']
+                    },
+                    {
+                        title: '分背靠背',
+                        description: '分离式靠背设计，上下部分可独立调节，提供更精细的背部支撑，适合对坐姿有特殊要求的用户。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['分离设计', '独立调节', '精细支撑', '个性化']
+                    }
+                ]
+            },
+            lumbar: {
+                title: '腰托',
+                items: [
+                    {
+                        title: '独立腰托',
+                        description: '独立的腰部支撑系统，支持高度和压力调节。有效缓解腰部疲劳，预防腰椎疾病。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['独立支撑', '高度调节', '压力调节', '腰椎保护']
+                    },
+                    {
+                        title: '特色腰托',
+                        description: '具有特殊功能的腰托设计，如记忆棉材质、按摩功能等，提供更高级的腰部护理体验。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['记忆棉', '按摩功能', '高级护理', '舒适体验']
+                    }
+                ]
+            },
+            seat: {
+                title: '坐垫',
+                items: [
+                    {
+                        title: '海绵坐垫',
+                        description: '采用优质海绵材料制作的坐垫，提供舒适的坐感。包括再生棉、原生棉和定型海绵等多种类型。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['海绵材质', '舒适坐感', '再生棉', '原生棉', '定型海绵']
+                    },
+                    {
+                        title: '网布坐垫',
+                        description: '采用透气网布材料制作的坐垫，具有良好的透气性和排湿性，适合长时间使用。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['网布材质', '透气性好', '排湿性强', '长时间使用']
+                    }
+                ]
+            },
+            chassis: {
+                title: '底盘',
+                items: [
+                    {
+                        title: '圆托底盘',
+                        description: '经典的圆形托盘底盘设计，结构简单可靠，适合基础办公需求。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['圆形托盘', '结构简单', '可靠耐用', '基础功能']
+                    },
+                    {
+                        title: '逍遥托底盘',
+                        description: '支持摇摆功能的底盘设计，工作之余可以放松摇摆，缓解疲劳。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['摇摆功能', '放松体验', '缓解疲劳', '休闲办公']
+                    },
+                    {
+                        title: '倾仰托盘底盘',
+                        description: '支持多档位倾仰调节的底盘系统，包括无极调节、原位锁定、多档锁定等多种类型。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['倾仰调节', '无极调节', '原位锁定', '多档锁定', '自调节', '快调张力']
+                    }
+                ]
+            },
+            base: {
+                title: '五星脚',
+                items: [
+                    {
+                        title: '尼龙五星脚',
+                        description: '采用高强度尼龙材料制作的五星脚，重量轻、强度高，包括拆单脚和一体式设计。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['尼龙材质', '重量轻', '强度高', '拆单脚', '一体式']
+                    },
+                    {
+                        title: '铁质五星脚',
+                        description: '采用优质钢材制作的五星脚，承重能力强，经久耐用。支持拆装和一体式设计，表面处理包括电镀和喷漆。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['铁质材质', '承重能力强', '经久耐用', '拆装设计', '电镀处理', '喷漆处理']
+                    },
+                    {
+                        title: '铝合金五星脚',
+                        description: '采用轻质铝合金制作的五星脚，兼具强度和轻量化特性。表面处理包括抛光和喷漆工艺。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['铝合金材质', '轻量化', '强度高', '抛光处理', '喷漆处理']
+                    }
+                ]
+            },
+            casters: {
+                title: '椅轮',
+                items: [
+                    {
+                        title: 'PP轮',
+                        description: '聚丙烯材质的椅轮，适合地毯和硬质地面使用，滚动顺畅，价格经济。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['PP材质', '地毯适用', '硬质地面', '滚动顺畅', '价格经济']
+                    },
+                    {
+                        title: 'PU轮',
+                        description: '聚氨酯材质的椅轮，静音效果佳，对地面保护性好，适合各种地面材质使用。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['PU材质', '静音效果', '地面保护', '多材质适用']
+                    },
+                    {
+                        title: '尼龙轮',
+                        description: '高强度尼龙材质的椅轮，承重能力强，耐磨性好，适合高负荷使用环境。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['尼龙材质', '高承重', '耐磨性好', '高负荷使用']
+                    },
+                    {
+                        title: '冰刀轮',
+                        description: '特殊的冰刀式设计，适合光滑地面使用，移动更加流畅，外观时尚。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['冰刀设计', '光滑地面', '流畅移动', '时尚外观']
+                    },
+                    {
+                        title: '太空轮',
+                        description: '高科技太空轮设计，具有超强承重能力和极佳的耐磨性，适合专业办公环境。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['高科技设计', '超强承重', '极佳耐磨', '专业办公']
+                    },
+                    {
+                        title: '刹车轮',
+                        description: '带有刹车功能的椅轮，可以锁定位置防止滑动，适合需要固定位置的办公场景。',
+                        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+                        features: ['刹车功能', '位置锁定', '防滑动', '固定位置']
+                    }
+                ]
+            }
+        };
+
+        // 显示分类
+        function showCategories() {
+            document.getElementById('categoriesGrid').style.display = 'grid';
+            document.getElementById('itemsContainer').classList.remove('active');
+        }
+
+
+        // 渲染配件卡片
+        function renderItems(items) {
+            const itemsGrid = document.getElementById('itemsGrid');
+            itemsGrid.innerHTML = '';
+
+            items.forEach((item, index) => {
+                const itemCard = document.createElement('div');
+                itemCard.className = 'item-card';
+                
+                const imageHtml = item.image ? 
+                    `<img src="${item.image}" alt="${item.title}" class="item-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` :
+                    '';
+                
+                const noImageHtml = `
+                    <div class="no-image" style="${item.image ? 'display:none;' : 'display:flex;'}">
+                        <i class="fas fa-image"></i>
+                    </div>
+                `;
+
+                const featuresHtml = item.features.map(feature => 
+                    `<span class="feature-tag">${feature}</span>`
+                ).join('');
+
+                itemCard.innerHTML = `
+                    ${imageHtml}
+                    ${noImageHtml}
+                    <div class="item-content">
+                        <div class="item-actions">
+                            <button class="edit-btn" onclick="editItem('${currentCategory}', ${index})">
+                                <i class="fas fa-edit"></i> 编辑
+                            </button>
+                            <button class="delete-btn" onclick="deleteItemConfirm('${currentCategory}', ${index})">
+                                <i class="fas fa-trash"></i> 删除
+                            </button>
+                        </div>
+                        <h3 class="item-title">${item.title}</h3>
+                        <p class="item-description">${item.description}</p>
+                        <div class="item-features">
+                            ${featuresHtml}
+                        </div>
+                    </div>
+                `;
+
+                itemsGrid.appendChild(itemCard);
+            });
+        }
+
+        // 当前选中的分类
+        let currentCategory = '';
+
+        // 显示特定分类的配件
+        function showCategory(categoryKey) {
+            const categoryData = officeChairData[categoryKey];
+            if (!categoryData) return;
+
+            // 设置当前分类
+            currentCategory = categoryKey;
+
+            // 隐藏分类网格
+            document.getElementById('categoriesGrid').style.display = 'none';
+            
+            // 显示配件容器
+            document.getElementById('itemsContainer').classList.add('active');
+            
+            // 设置标题
+            document.getElementById('categoryTitleDisplay').textContent = categoryData.title;
+            
+            // 渲染配件卡片
+            renderItems(categoryData.items);
+        }
+
+        // 编辑配件
+        function editItem(categoryKey, itemIndex) {
+            const categoryData = officeChairData[categoryKey];
+            const item = categoryData.items[itemIndex];
+            
+            if (!item) return;
+
+            // 填充表单数据
+            document.getElementById('editItemId').value = item.id || '';
+            document.getElementById('editItemCategory').value = categoryKey;
+            document.getElementById('editItemIndex').value = itemIndex;
+            document.getElementById('editItemTitle').value = item.title;
+            document.getElementById('editItemDescription').value = item.description;
+            document.getElementById('editItemImage').value = item.image || '';
+
+            // 渲染功能特性输入框
+            renderFeatureInputs(item.features || []);
+
+            // 显示模态框
+            const modal = document.getElementById('editItemModal');
+            modal.classList.add('show');
+            modal.style.display = 'flex';
+            modal.style.pointerEvents = 'auto';
+        }
+
+        // 渲染功能特性输入框
+        function renderFeatureInputs(features) {
+            const container = document.getElementById('featuresContainer');
+            container.innerHTML = '';
+
+            features.forEach((feature, index) => {
+                const featureItem = document.createElement('div');
+                featureItem.className = 'feature-input-item';
+                featureItem.innerHTML = `
+                    <input type="text" value="${feature}" placeholder="输入特性">
+                    <button type="button" class="remove-feature" onclick="removeFeatureInput(this)">×</button>
+                `;
+                container.appendChild(featureItem);
+            });
+
+            // 如果没有特性，添加一个空的输入框
+            if (features.length === 0) {
+                addFeatureInput();
+            }
+        }
+
+        // 添加功能特性输入框
+        function addFeatureInput() {
+            const container = document.getElementById('featuresContainer');
+            const featureItem = document.createElement('div');
+            featureItem.className = 'feature-input-item';
+            featureItem.innerHTML = `
+                <input type="text" placeholder="输入特性">
+                <button type="button" class="remove-feature" onclick="removeFeatureInput(this)">×</button>
+            `;
+            container.appendChild(featureItem);
+        }
+
+        // 移除功能特性输入框
+        function removeFeatureInput(button) {
+            button.parentElement.remove();
+        }
+
+        // 保存配件
+        function saveItem() {
+            const categoryKey = document.getElementById('editItemCategory').value;
+            const itemIndex = parseInt(document.getElementById('editItemIndex').value);
+            const title = document.getElementById('editItemTitle').value.trim();
+            const description = document.getElementById('editItemDescription').value.trim();
+            const image = document.getElementById('editItemImage').value.trim();
+
+            if (!title || !description) {
+                alert('请填写配件名称和描述');
+                return;
+            }
+
+            // 获取功能特性
+            const featureInputs = document.querySelectorAll('#featuresContainer .feature-input-item input');
+            const features = Array.from(featureInputs)
+                .map(input => input.value.trim())
+                .filter(feature => feature);
+
+            // 更新数据
+            const categoryData = officeChairData[categoryKey];
+            const item = categoryData.items[itemIndex];
+            
+            item.title = title;
+            item.description = description;
+            item.image = image;
+            item.features = features;
+
+            // 重新渲染
+            renderItems(categoryData.items);
+            
+            // 关闭模态框
+            closeEditModal();
+            
+            alert('保存成功');
+        }
+
+        // 删除配件确认
+        function deleteItemConfirm(categoryKey, itemIndex) {
+            const categoryData = officeChairData[categoryKey];
+            const item = categoryData.items[itemIndex];
+            
+            if (!confirm(`确定要删除"${item.title}"吗？此操作无法撤销。`)) {
+                return;
+            }
+
+            // 删除配件
+            categoryData.items.splice(itemIndex, 1);
+            
+            // 重新渲染
+            renderItems(categoryData.items);
+            
+            alert('删除成功');
+        }
+
+        // 删除配件（从模态框）
+        function deleteItem() {
+            const categoryKey = document.getElementById('editItemCategory').value;
+            const itemIndex = parseInt(document.getElementById('editItemIndex').value);
+            
+            deleteItemConfirm(categoryKey, itemIndex);
+            closeEditModal();
+        }
+
+        // 关闭编辑模态框
+        function closeEditModal() {
+            const modal = document.getElementById('editItemModal');
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.style.pointerEvents = '';
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 可以在这里添加其他初始化逻辑
+            console.log('办公椅配件页面已加载');
+        });
+    </script>
+</body>
+</html>
