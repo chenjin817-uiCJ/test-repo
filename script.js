@@ -4173,6 +4173,12 @@ function navigateToMaterial(materialId) {
     }, 100);
 }
 
+// 打开办公椅配件页面
+function openOfficeChairPage() {
+    // 在新窗口中打开办公椅页面
+    window.open('office-chair.html', '_blank');
+}
+
 // 设置产品卖点分类过滤
 function setHighlightCategoryFilter(cat, event) {
     highlightCategoryFilter = cat;
