@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家具卖点字典</title>
+    <link rel="stylesheet" href="styles.css?v=2">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app">
+        <!-- 头部导航 -->
+        <header class="header">
+            <div class="container">
+                <h1><i class="fas fa-couch"></i> 家具卖点字典</h1>
+                <div class="header-actions" id="headerActions">
+                    <!-- 材质页面按钮 -->
+                    <div class="page-actions" id="materialsActions">
+                        <button class="btn btn-secondary" onclick="showAddModal()">
+                            <i class="fas fa-plus"></i> 新增材质
+                        </button>
+                        <button class="btn btn-primary" onclick="showUploadModal()">
+                            <i class="fas fa-upload"></i> 上传材质数据
+                        </button>
+                    </div>
+                    <!-- 面料页面按钮 -->
+                    <div class="page-actions" id="fabricsActions" style="display: none;">
+                        <button class="btn btn-secondary" onclick="showAddFabricModal()">
+                            <i class="fas fa-plus"></i> 新增面料
+                        </button>
+                        <button class="btn btn-primary" onclick="showFabricUploadModal()">
+                            <i class="fas fa-upload"></i> 上传面料数据
+                        </button>
+                    </div>
+                    <!-- 色板管理页面按钮 -->
+                    <div class="page-actions" id="colorboardActions" style="display: none;">
+                        <button class="btn btn-secondary" onclick="showAddColorboardModal()">
+                            <i class="fas fa-plus"></i> 新增色板
+                        </button>
+                        <button class="btn btn-primary" onclick="showColorboardUploadModal()">
+                            <i class="fas fa-upload"></i> 上传色板数据
+                        </button>
+                    </div>
+                    <!-- 产品卖点页面按钮 -->
+                    <div class="page-actions" id="highlightsActions" style="display: none;">
+                        <button class="btn btn-secondary" onclick="showAddHighlightModal()">
+                            <i class="fas fa-plus"></i> 新增卖点
+                        </button>
+                        <button class="btn btn-primary" onclick="showHighlightUploadModal()">
+                            <i class="fas fa-upload"></i> 上传卖点数据
+                        </button>
+                        <button class="btn btn-warning" onclick="addTestSceneImages()" style="margin-left: 10px;">
+                            <i class="fas fa-bug"></i> 测试场景图
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 页面导航 -->
+        <nav class="page-nav">
+            <div class="container">
+                <button class="nav-btn" onclick="switchPage('options')">
+                    <i class="fas fa-cog"></i> 选项管理
+                </button>
+                <button class="nav-btn" onclick="switchPage('colorboard')">
+                    <i class="fas fa-palette"></i> 色板管理
+                </button>
+                <button class="nav-btn active" onclick="switchPage('materials')">
+                    <i class="fas fa-layer-group"></i> 材质字典
+                </button>
+                <button class="nav-btn" onclick="switchPage('fabrics')">
+                    <i class="fas fa-th-large"></i> 面料管理
+                </button>
+                <button class="nav-btn" onclick="switchPage('highlights')">
+                    <i class="fas fa-star"></i> 产品卖点
+                </button>
+            </div>
+        </nav>
+
+        <!-- 材质页面 -->
+        <div class="page-content" id="materialsPage">
+            <!-- 搜索栏 -->
+            <div class="search-section">
+                <div class="container">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="搜索材质名称或特性...">
+                    </div>
+                    <div class="category-filters">
+                        <button class="btn btn-secondary category-btn active" data-category="all" onclick="setCategoryFilter('all', event)">全部</button>
+                        <button class="btn btn-secondary category-btn" data-category="wood" onclick="setCategoryFilter('wood', event)">木头材质</button>
+                        <button class="btn btn-secondary category-btn" data-category="fabric" onclick="setCategoryFilter('fabric', event)">面料材质</button>
+                        <button class="btn btn-secondary category-btn" data-category="foam" onclick="setCategoryFilter('foam', event)">海绵材质</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 材质列表 -->
+            <main class="main-content">
+                <div class="container">
+                    <div class="materials-grid" id="materialsGrid">
+                        <!-- 材质卡片将通过JavaScript动态生成 -->
+                    </div>
+                    <div class="no-results" id="noResults" style="display: none;">
+                        <i class="fas fa-search"></i>
+                        <p>没有找到匹配的材质</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 面料页面 -->
+        <div class="page-content" id="fabricsPage" style="display: none;">
+            <!-- 搜索栏 -->
+            <div class="search-section">
+                <div class="container">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="fabricSearchInput" placeholder="搜索色板型号、面料型号或面料颜色...">
+                    </div>
+                    <div class="category-filters">
+                        <button class="btn btn-secondary category-btn active" data-category="all" onclick="setFabricCategoryFilter('all', event)">
+                            <i class="fas fa-th"></i> 全部
+                        </button>
+                        <button class="btn btn-secondary category-btn" data-category="amazon" onclick="setFabricCategoryFilter('amazon', event)">
+                            <i class="fab fa-amazon"></i> 亚马逊
+                        </button>
+                        <button class="btn btn-secondary category-btn" data-category="website" onclick="setFabricCategoryFilter('website', event)">
+                            <i class="fas fa-globe"></i> 自建站
+                        </button>
+                        <button class="btn btn-secondary category-btn" data-category="wayfair" onclick="setFabricCategoryFilter('wayfair', event)">
+                            <i class="fas fa-store"></i> Wayfair
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 面料Gallery -->
+            <main class="fabrics-content">
+                <div class="container">
+                    <div class="fabrics-gallery" id="fabricsGallery">
+                        <!-- 面料卡片将通过JavaScript动态生成 -->
+                    </div>
+                    <div class="no-results" id="fabricsNoResults" style="display: none;">
+                        <i class="fas fa-th-large"></i>
+                        <p>该分类下暂无面料数据</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 色板管理页面 -->
+        <div class="page-content" id="colorboardPage" style="display: none;">
+            <!-- 搜索栏 -->
+            <div class="search-section">
+                <div class="container">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="colorboardSearchInput" placeholder="搜索色板型号、面料描述或材质信息...">
+                    </div>
+                    <div class="category-filters">
+                        <button class="btn btn-secondary category-btn active" data-category="all" onclick="setColorboardCategoryFilter('all', event)">
+                            全部
+                        </button>
+                        <button class="btn btn-secondary category-btn" data-category="amazon" onclick="setColorboardCategoryFilter('amazon', event)">
+                            Amazon
+                        </button>
+                        <button class="btn btn-secondary category-btn" data-category="website" onclick="setColorboardCategoryFilter('website', event)">
+                            自建站
+                        </button>
+                        <button class="btn btn-secondary category-btn" data-category="wayfair" onclick="setColorboardCategoryFilter('wayfair', event)">
+                            Wayfair
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 色板表格 -->
+            <main class="main-content">
+                <div class="container">
+                    <div class="notion-table-container">
+                        <div class="notion-table-wrapper">
+                            <table class="notion-table" id="colorboardTable">
+                                <thead>
+                                    <tr>
+                                        <th class="notion-table-header" data-sort="image">
+                                            <div class="notion-table-header-content">
+                                                <span>图片</span>
+                                            </div>
+                                        </th>
+                                        <th class="notion-table-header" data-sort="colorCode">
+                                            <div class="notion-table-header-content">
+                                                <span>色板型号</span>
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            </div>
+                                        </th>
+                                        <th class="notion-table-header" data-sort="category">
+                                            <div class="notion-table-header-content">
+                                                <span>平台</span>
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            </div>
+                                        </th>
+                                        <th class="notion-table-header" data-sort="price">
+                                            <div class="notion-table-header-content">
+                                                <span>价格</span>
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            </div>
+                                        </th>
+                                        <th class="notion-table-header" data-sort="moq">
+                                            <div class="notion-table-header-content">
+                                                <span>MOQ</span>
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            </div>
+                                        </th>
+                                        <th class="notion-table-header" data-sort="manufacturer">
+                                            <div class="notion-table-header-content">
+                                                <span>厂家</span>
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            </div>
+                                        </th>
+                                        <th class="notion-table-header" data-sort="classification">
+                                            <div class="notion-table-header-content">
+                                                <span>归类</span>
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            </div>
+                                        </th>
+                                        <th class="notion-table-header" data-sort="composition">
+                                            <div class="notion-table-header-content">
+                                                <span>成分</span>
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            </div>
+                                        </th>
+                                        <th class="notion-table-header" data-sort="weight">
+                                            <div class="notion-table-header-content">
+                                                <span>克重</span>
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            </div>
+                                        </th>
+                                        <th class="notion-table-header" data-sort="width">
+                                            <div class="notion-table-header-content">
+                                                <span>门幅</span>
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            </div>
+                                        </th>
+                                        <th class="notion-table-header">
+                                            <div class="notion-table-header-content">
+                                                <span>操作</span>
+                                            </div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="colorboardTableBody">
+                                    <!-- 表格行将在这里动态生成 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="no-results" id="colorboardNoResults" style="display: none;">
+                        <i class="fas fa-search"></i>
+                        <p>没有找到匹配的色板</p>
+                        <p>请尝试调整搜索条件或分类筛选</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 产品卖点页面 -->
+        <div class="page-content" id="highlightsPage" style="display: none;">
+            <!-- 搜索栏 -->
+            <div class="search-section">
+                <div class="container">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="highlightSearchInput" placeholder="搜索产品名称、父款型号或卖点描述...">
+                    </div>
+                    <div class="category-filters">
+                        <button class="btn btn-secondary category-btn active" data-category="all" onclick="setHighlightCategoryFilter('all', event)">
+                            <i class="fas fa-th"></i> 全部
+                        </button>
+                        <button class="btn btn-secondary category-btn" data-category="seating" onclick="setHighlightCategoryFilter('seating', event)">
+                            <i class="fas fa-couch"></i> 坐具
+                        </button>
+                        <button class="btn btn-secondary category-btn" data-category="table" onclick="setHighlightCategoryFilter('table', event)">
+                            <i class="fas fa-table"></i> 桌子
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 产品卖点Gallery -->
+            <main class="highlights-content">
+                <div class="container">
+                    <div class="highlights-gallery" id="highlightsGallery">
+                        <!-- 产品卖点卡片将通过JavaScript动态生成 -->
+                    </div>
+                    <div class="no-results" id="highlightsNoResults" style="display: none;">
+                        <i class="fas fa-star"></i>
+                        <p>该分类下暂无产品卖点数据</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 选项管理页面 -->
+        <div class="page-content" id="optionsPage" style="display: none;">
+            <!-- 搜索栏 -->
+            <div class="search-section">
+                <div class="container">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="optionsSearchInput" placeholder="搜索材质选项...">
+                    </div>
+                    <div class="category-filters">
+                        <button class="btn btn-secondary category-btn active" data-category="all" onclick="setOptionsCategoryFilter('all', event)">
+                            <i class="fas fa-th"></i> 全部
+                        </button>
+                        <button class="btn btn-secondary category-btn" data-category="fabric" onclick="setOptionsCategoryFilter('fabric', event)">
+                            <i class="fas fa-layer-group"></i> 面料材质
+                        </button>
+                        <button class="btn btn-secondary category-btn" data-category="wood" onclick="setOptionsCategoryFilter('wood', event)">
+                            <i class="fas fa-tree"></i> 木头材质
+                        </button>
+                        <button class="btn btn-secondary category-btn" data-category="foam" onclick="setOptionsCategoryFilter('foam', event)">
+                            <i class="fas fa-cube"></i> 海绵材质
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 内容区域 -->
+            <div class="content">
+                <div class="container">
+                    <div class="page-header">
+                        <h2>材质选项管理</h2>
+                        <button class="btn btn-primary" onclick="showAddOptionModal()">
+                            <i class="fas fa-plus"></i> 新增选项
+                        </button>
+                    </div>
+
+                    <div class="options-list" id="optionsList">
+                        <div class="options-list-header">
+                            <div>选项名称</div>
+                            <div>材质类型</div>
+                            <div>操作</div>
+                        </div>
+                        <div id="optionsGrid">
+                            <!-- 选项列表项将在这里动态生成 -->
+                        </div>
+                    </div>
+
+                    <div class="no-results" id="noOptionsResults" style="display: none;">
+                        <i class="fas fa-search"></i>
+                        <p>没有找到相关选项</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 材质详情模态框 -->
+        <div class="modal" id="materialModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle"></h2>
+                    <button class="close-btn" onclick="event.stopPropagation(); closeModal();">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- 详情内容将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Excel上传模态框 -->
+        <div class="modal" id="uploadModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>上传材质数据</h2>
+                    <button class="close-btn" onclick="closeUploadModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="upload-area" id="uploadArea">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>拖拽 Excel 与图片 文件到此处或点击选择文件</p>
+                        <input type="file" id="fileInput" accept=".xlsx,.xls,image/*" multiple style="display: none;">
+                        <button class="btn btn-secondary" onclick="event.stopPropagation();document.getElementById('fileInput').click()">
+                            选择文件（可多选）
+                        </button>
+                    </div>
+                    <div class="upload-instructions">
+                        <h3>Excel与图片上传说明：</h3>
+                        <ul>
+                            <li>第一列：材质名称</li>
+                            <li>第二列：材质描述</li>
+                            <li>第三列：主要特性（用逗号分隔）</li>
+                            <li>第四列：图片文件名 或 图片URL（可选）</li>
+                            <li>第五列：材质类型（wood 或 fabric，可选；默认按名称智能判断）</li>
+                            <li>如使用本地图片，请与Excel一同选择相应图片文件；第四列填写文件名（如 <code>wood.jpg</code>），系统会自动匹配。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 新增材质模态框 -->
+        <div class="modal" id="addModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>新增材质</h2>
+                    <button class="close-btn" onclick="closeAddModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addMaterialForm">
+                        <div class="form-group">
+                            <label for="addCategory">材质类型</label>
+                            <select id="addCategory">
+                                <option value="fabric">面料材质</option>
+                                <option value="wood">木头材质</option>
+                                <option value="foam">海绵材质</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="addName">材质名称</label>
+                            <input type="text" id="addName" placeholder="例如：实木" required>
+                            <div id="foamNameOptions" class="foam-options" style="display: none;">
+                                <p class="form-help">海绵材质选项：</p>
+                                <div class="foam-option-buttons">
+                                    <button type="button" class="btn btn-sm btn-outline" onclick="selectFoamName('高密度海绵')">高密度海绵</button>
+                                    <button type="button" class="btn btn-sm btn-outline" onclick="selectFoamName('海绵+羽绒')">海绵+羽绒</button>
+                                    <button type="button" class="btn btn-sm btn-outline" onclick="selectFoamName('海绵+弹簧包')">海绵+弹簧包</button>
+                                    <button type="button" class="btn btn-sm btn-outline" onclick="selectFoamName('羽绒')">羽绒</button>
+                                    <button type="button" class="btn btn-sm btn-outline" onclick="selectFoamName('海绵+鸭毛')">海绵+鸭毛</button>
+                                </div>
+                            </div>
+                            <small class="form-help" id="addNameDupMsg" style="display:none;color:#e74c3c;">已存在相同材质名称，请更换</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="addDescription">材质描述</label>
+                            <textarea id="addDescription" rows="3" placeholder="简要描述..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="addFeatures">主要特性（用逗号分隔）</label>
+                            <input type="text" id="addFeatures" placeholder="例如：环保,耐用,自然纹理">
+                        </div>
+                        <div class="form-group">
+                            <label for="addImageUrl">图片URL（可选）</label>
+                            <input type="url" id="addImageUrl" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label for="addImageFile">本地图片（可选）</label>
+                            <input type="file" id="addImageFile" accept="image/*">
+                            <small class="form-help">若同时填写URL并选择本地图片，将优先使用本地图片。</small>
+                            <div class="image-preview" id="addImagePreview" style="display:none;">
+                                <img id="addImagePreviewImg" alt="预览" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑材质模态框 -->
+        <div class="modal" id="editModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>编辑材质</h2>
+                    <button class="close-btn" onclick="closeEditModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editMaterialForm">
+                        <input type="hidden" id="editId">
+                        <div class="form-group">
+                            <label for="editCategory">材质类型</label>
+                            <select id="editCategory">
+                                <option value="fabric">面料材质</option>
+                                <option value="wood">木头材质</option>
+                                <option value="foam">海绵材质</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editName">材质名称</label>
+                            <input type="text" id="editName" placeholder="例如：实木" required>
+                            <div id="editFoamNameOptions" class="foam-options" style="display: none;">
+                                <p class="form-help">海绵材质选项：</p>
+                                <div class="foam-option-buttons">
+                                    <button type="button" class="btn btn-sm btn-outline" onclick="selectEditFoamName('高密度海绵')">高密度海绵</button>
+                                    <button type="button" class="btn btn-sm btn-outline" onclick="selectEditFoamName('海绵+羽绒')">海绵+羽绒</button>
+                                    <button type="button" class="btn btn-sm btn-outline" onclick="selectEditFoamName('海绵+弹簧包')">海绵+弹簧包</button>
+                                    <button type="button" class="btn btn-sm btn-outline" onclick="selectEditFoamName('羽绒')">羽绒</button>
+                                    <button type="button" class="btn btn-sm btn-outline" onclick="selectEditFoamName('海绵+鸭毛')">海绵+鸭毛</button>
+                                </div>
+                            </div>
+                            <small class="form-help" id="editNameDupMsg" style="display:none;color:#e74c3c;">已存在相同材质名称，请更换</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="editDescription">材质描述</label>
+                            <textarea id="editDescription" rows="3" placeholder="简要描述..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editFeatures">主要特性（用逗号分隔）</label>
+                            <input type="text" id="editFeatures" placeholder="例如：环保,耐用,自然纹理">
+                        </div>
+                        <div class="form-group">
+                            <label for="editImageUrl">图片URL（可选）</label>
+                            <input type="url" id="editImageUrl" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label for="editImageFile">本地图片（可选）</label>
+                            <input type="file" id="editImageFile" accept="image/*">
+                            <small class="form-help">若同时填写URL并选择本地图片，将优先使用本地图片。</small>
+                            <div class="image-preview" id="editImagePreview" style="display:none;">
+                                <img id="editImagePreviewImg" alt="预览" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeEditModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存修改
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 面料详情模态框 -->
+        <div class="modal" id="fabricModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="fabricModalTitle"></h2>
+                    <button class="close-btn" onclick="closeFabricModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" id="fabricModalBody">
+                    <!-- 面料详情内容将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 面料上传模态框 -->
+        <div class="modal" id="fabricUploadModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>上传面料数据</h2>
+                    <button class="close-btn" onclick="closeFabricUploadModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="upload-area" id="fabricUploadArea">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>拖拽 Excel 与图片 文件到此处或点击选择文件</p>
+                        <input type="file" id="fabricFileInput" accept=".xlsx,.xls,image/*" multiple style="display: none;">
+                        <button class="btn btn-secondary" onclick="event.stopPropagation();document.getElementById('fabricFileInput').click()">
+                            选择文件（可多选）
+                        </button>
+                    </div>
+                    <div class="upload-instructions">
+                        <h3>面料Excel与图片上传说明：</h3>
+                        <ul>
+                            <li>第一列：色板型号</li>
+                            <li>第二列：面料描述</li>
+                            <li>第三列：面料特性（用逗号分隔）</li>
+                            <li>第四列：图片文件名 或 图片URL（可选）</li>
+                            <li>第五列：平台分类（amazon、website、wayfair）</li>
+                            <li>第六列：价格（数字，可选）</li>
+                            <li>第七列：MOQ（可选）</li>
+                            <li>第八列：币种（CNY或USD，可选）</li>
+                            <li>第九列：面料厂家（可选）</li>
+                            <li>第十列：面料归类（可选）</li>
+                            <li>第十一列：面料成分（可选）</li>
+                            <li>第十二列：面料克重（可选）</li>
+                            <li>第十三列：面料门幅（可选）</li>
+                            <li>如使用本地图片，请与Excel一同选择相应图片文件；第四列填写文件名（如 <code>fabric1.jpg</code>），系统会自动匹配。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 新增面料模态框 -->
+        <div class="modal" id="addFabricModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>新增面料</h2>
+                    <button class="close-btn" onclick="closeAddFabricModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addFabricForm">
+                        <div class="form-group">
+                            <label for="addFabricColorCode">色板型号</label>
+                            <input type="text" id="addFabricColorCode" list="colorCodeList" placeholder="请选择或输入色板型号" required>
+                            <datalist id="colorCodeList"></datalist>
+                        </div>
+                        <div class="form-group">
+                            <label for="addFabricCode">面料型号</label>
+                            <input type="text" id="addFabricCode" placeholder="例如：F001" required>
+                            <small class="form-help" id="addFabricCodeDupMsg" style="display:none;color:#e74c3c;">已存在相同面料型号，请更换</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="addFabricColor">面料颜色</label>
+                            <input type="text" id="addFabricColor" placeholder="例如：米白色">
+                        </div>
+                        <div class="form-group">
+                            <label for="addFabricImageUrl">图片URL（可选）</label>
+                            <input type="url" id="addFabricImageUrl" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label for="addFabricImageFile">本地图片（可选）</label>
+                            <input type="file" id="addFabricImageFile" accept="image/*">
+                            <small class="form-help">若同时填写URL并选择本地图片，将优先使用本地图片。</small>
+                            <div class="image-preview" id="addFabricImagePreview" style="display:none;">
+                                <img id="addFabricImagePreviewImg" alt="预览" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeAddFabricModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑面料模态框 -->
+        <div class="modal" id="editFabricModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>编辑面料</h2>
+                    <button class="close-btn" onclick="closeEditFabricModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editFabricForm">
+                        <input type="hidden" id="editFabricId">
+                        <div class="form-group">
+                            <label for="editFabricColorCode">色板型号</label>
+                            <input type="text" id="editFabricColorCode" list="colorCodeListEdit" placeholder="请选择或输入色板型号" required>
+                            <datalist id="colorCodeListEdit"></datalist>
+                        </div>
+                        <div class="form-group">
+                            <label for="editFabricCode">面料型号</label>
+                            <input type="text" id="editFabricCode" placeholder="例如：F001" required>
+                            <small class="form-help" id="editFabricCodeDupMsg" style="display:none;color:#e74c3c;">已存在相同面料型号，请更换</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="editFabricColor">面料颜色</label>
+                            <input type="text" id="editFabricColor" placeholder="例如：米白色">
+                        </div>
+                        <div class="form-group">
+                            <label for="editFabricImageUrl">图片URL（可选）</label>
+                            <input type="url" id="editFabricImageUrl" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label for="editFabricImageFile">本地图片（可选）</label>
+                            <input type="file" id="editFabricImageFile" accept="image/*">
+                            <small class="form-help">若同时填写URL并选择本地图片，将优先使用本地图片。</small>
+                            <div class="image-preview" id="editFabricImagePreview" style="display:none;">
+                                <img id="editFabricImagePreviewImg" alt="预览" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeEditFabricModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存修改
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 新增色板模态框 -->
+        <div class="modal" id="addColorboardModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>新增色板</h2>
+                    <button class="close-btn" onclick="closeAddColorboardModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addColorboardForm">
+                        <div class="form-group">
+                            <label for="addColorboardColorCode">色板型号</label>
+                            <input type="text" id="addColorboardColorCode" list="colorCodeListAdd" placeholder="例如：CC-001" required>
+                            <datalist id="colorCodeListAdd"></datalist>
+                            <small class="form-help" id="addColorboardColorCodeDupMsg" style="display:none;color:#e74c3c;">已存在相同色板型号，请更换</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="addColorboardDescription">面料描述</label>
+                            <textarea id="addColorboardDescription" placeholder="描述面料的特性和用途"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="addColorboardCategory">平台</label>
+                            <select id="addColorboardCategory" required>
+                                <option value="">请选择平台</option>
+                                <option value="amazon">亚马逊</option>
+                                <option value="website">自建站</option>
+                                <option value="wayfair">Wayfair</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="addColorboardPrice">价格</label>
+                            <input type="number" id="addColorboardPrice" step="0.01" placeholder="例如：25.50">
+                        </div>
+                        <div class="form-group">
+                            <label for="addColorboardCurrency">币种</label>
+                            <select id="addColorboardCurrency">
+                                <option value="CNY">¥ CNY</option>
+                                <option value="USD">$ USD</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="addColorboardMoq">MOQ</label>
+                            <input type="text" id="addColorboardMoq" placeholder="例如：100米">
+                        </div>
+                        <div class="form-group">
+                            <label for="addColorboardManufacturer">面料厂家</label>
+                            <input type="text" id="addColorboardManufacturer" placeholder="例如：某某纺织厂">
+                        </div>
+                        <div class="form-group">
+                            <label for="addColorboardClassification">面料归类</label>
+                            <input type="text" id="addColorboardClassification" placeholder="例如：棉麻混纺">
+                        </div>
+                        <div class="form-group">
+                            <label for="addColorboardComposition">面料成分</label>
+                            <input type="text" id="addColorboardComposition" placeholder="例如：60%棉，40%麻">
+                        </div>
+                        <div class="form-group">
+                            <label for="addColorboardWeight">面料克重</label>
+                            <input type="text" id="addColorboardWeight" placeholder="例如：200g/m²">
+                        </div>
+                        <div class="form-group">
+                            <label for="addColorboardWidth">门幅</label>
+                            <input type="text" id="addColorboardWidth" placeholder="例如：150cm">
+                        </div>
+                        <div class="form-group">
+                            <label for="addColorboardImageUrl">图片URL（可选）</label>
+                            <input type="url" id="addColorboardImageUrl" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label for="addColorboardImageFile">本地图片（可选）</label>
+                            <input type="file" id="addColorboardImageFile" accept="image/*">
+                            <small class="form-help">若同时填写URL并选择本地图片，将优先使用本地图片。</small>
+                            <div class="image-preview" id="addColorboardImagePreview" style="display:none;">
+                                <img id="addColorboardImagePreviewImg" alt="预览" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeAddColorboardModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 色板编辑面料模态框 -->
+        <div class="modal" id="editColorboardFabricModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>编辑面料</h2>
+                    <button class="close-btn" onclick="closeEditColorboardFabricModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editColorboardFabricForm">
+                        <input type="hidden" id="editColorboardFabricId">
+                        <div class="form-group">
+                            <label for="editColorboardFabricColorCode">色板型号</label>
+                            <input type="text" id="editColorboardFabricColorCode" placeholder="例如：CC-001">
+                        </div>
+                        <div class="form-group">
+                            <label for="editColorboardFabricDescription">面料描述</label>
+                            <textarea id="editColorboardFabricDescription" placeholder="描述面料的特性和用途"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editColorboardFabricCategory">平台</label>
+                            <select id="editColorboardFabricCategory" required>
+                                <option value="">请选择平台</option>
+                                <option value="amazon">亚马逊</option>
+                                <option value="website">自建站</option>
+                                <option value="wayfair">Wayfair</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editColorboardFabricPrice">价格</label>
+                            <input type="number" id="editColorboardFabricPrice" step="0.01" placeholder="例如：25.50">
+                        </div>
+                        <div class="form-group">
+                            <label for="editColorboardFabricCurrency">币种</label>
+                            <select id="editColorboardFabricCurrency">
+                                <option value="CNY">人民币 (¥)</option>
+                                <option value="USD">美元 ($)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editColorboardFabricMoq">MOQ</label>
+                            <input type="text" id="editColorboardFabricMoq" placeholder="例如：100米">
+                        </div>
+                        <div class="form-group">
+                            <label for="editColorboardFabricManufacturer">厂家</label>
+                            <input type="text" id="editColorboardFabricManufacturer" placeholder="例如：华纺集团">
+                        </div>
+                        <div class="form-group">
+                            <label for="editColorboardFabricClassification">归类</label>
+                            <input type="text" id="editColorboardFabricClassification" placeholder="例如：亚麻">
+                        </div>
+                        <div class="form-group">
+                            <label for="editColorboardFabricComposition">成分</label>
+                            <input type="text" id="editColorboardFabricComposition" placeholder="例如：100%棉">
+                        </div>
+                        <div class="form-group">
+                            <label for="editColorboardFabricWeight">克重</label>
+                            <input type="text" id="editColorboardFabricWeight" placeholder="例如：180g/m²">
+                        </div>
+                        <div class="form-group">
+                            <label for="editColorboardFabricWidth">门幅</label>
+                            <input type="text" id="editColorboardFabricWidth" placeholder="例如：150cm">
+                        </div>
+                        <div class="form-group">
+                            <label for="editColorboardFabricImageUrl">图片URL（可选）</label>
+                            <input type="url" id="editColorboardFabricImageUrl" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label for="editColorboardFabricImageFile">本地图片（可选）</label>
+                            <input type="file" id="editColorboardFabricImageFile" accept="image/*">
+                            <small class="form-help">若同时填写URL并选择本地图片，将优先使用本地图片。</small>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" onclick="deleteColorboardFabric()">
+                                <i class="fas fa-trash"></i> 删除
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="closeEditColorboardFabricModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存修改
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图片预览模态框 -->
+        <div class="modal" id="imagePreviewModal" onclick="closeImagePreview()">
+            <div class="modal-content image-modal-content" onclick="event.stopPropagation()">
+                <button class="close-btn image-close" onclick="closeImagePreview()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="modal-body image-modal-body">
+                    <img id="previewImage" alt="预览" />
+                </div>
+            </div>
+        </div>
+
+        <!-- 新增选项模态框 -->
+        <div class="modal" id="addOptionModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>新增材质选项</h2>
+                    <button class="close-btn" onclick="closeAddOptionModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addOptionForm">
+                        <div class="form-group">
+                            <label for="addOptionCategory">材质类型</label>
+                            <select id="addOptionCategory" required>
+                                <option value="">请选择材质类型</option>
+                                <option value="fabric">面料材质</option>
+                                <option value="wood">木头材质</option>
+                                <option value="foam">海绵材质</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="addOptionName">选项名称</label>
+                            <input type="text" id="addOptionName" placeholder="例如：高密度海绵" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeAddOptionModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">新增选项</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑选项模态框 -->
+        <div class="modal" id="editOptionModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>编辑材质选项</h2>
+                    <button class="close-btn" onclick="closeEditOptionModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editOptionForm">
+                        <input type="hidden" id="editOptionId">
+                        <div class="form-group">
+                            <label for="editOptionCategory">材质类型</label>
+                            <select id="editOptionCategory" required>
+                                <option value="">请选择材质类型</option>
+                                <option value="fabric">面料材质</option>
+                                <option value="wood">木头材质</option>
+                                <option value="foam">海绵材质</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editOptionName">选项名称</label>
+                            <input type="text" id="editOptionName" placeholder="例如：高密度海绵" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeEditOptionModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">保存修改</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 产品卖点详情模态框 -->
+        <div class="modal" id="highlightModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="highlightModalTitle"></h2>
+                    <button class="close-btn" onclick="closeHighlightModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" id="highlightModalBody">
+                    <!-- 产品卖点详情内容将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 新增产品卖点模态框 -->
+        <div class="modal" id="addHighlightModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>新增产品卖点</h2>
+                    <button class="close-btn" onclick="closeAddHighlightModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addHighlightForm">
+                        <div class="form-group">
+                            <label for="addHighlightName">产品名称</label>
+                            <input type="text" id="addHighlightName" placeholder="例如：现代简约沙发" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="addHighlightParentModel">父款型号</label>
+                            <input type="text" id="addHighlightParentModel" placeholder="例如：SF-2024-001" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="addHighlightCategory">产品分类</label>
+                            <select id="addHighlightCategory" required>
+                                <option value="">请选择产品分类</option>
+                                <option value="seating">坐具</option>
+                                <option value="table">桌子</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="addHighlightDescription">卖点描述</label>
+                            <textarea id="addHighlightDescription" rows="3" placeholder="详细描述产品的主要卖点和特色..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="addHighlightFeatures">核心卖点（用逗号分隔）</label>
+                            <input type="text" id="addHighlightFeatures" placeholder="例如：舒适耐用,现代设计,易清洁">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>参考链接</label>
+                            <div class="reference-links-container">
+                                <input type="url" id="addHighlightReferenceLink1" placeholder="参考链接 1 (https://...)" class="reference-link-input">
+                                <input type="url" id="addHighlightReferenceLink2" placeholder="参考链接 2 (https://...)" class="reference-link-input">
+                                <input type="url" id="addHighlightReferenceLink3" placeholder="参考链接 3 (https://...)" class="reference-link-input">
+                            </div>
+                            <small class="form-help">可选，用于参考的产品链接</small>
+                        </div>
+                        
+                        <!-- 材质信息 - 仅对坐具显示 -->
+                        <div id="addMaterialFields" style="display: none;">
+                            <div class="form-group">
+                                <label for="addHighlightFabricMaterial">面料材质</label>
+                                <select id="addHighlightFabricMaterial">
+                                    <option value="">请选择面料材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="addHighlightLegMaterial">脚材质</label>
+                                <select id="addHighlightLegMaterial">
+                                    <option value="">请选择脚材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="addHighlightSpongeMaterial">海绵材质</label>
+                                <select id="addHighlightSpongeMaterial">
+                                    <option value="">请选择海绵材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="addHighlightFrameMaterial">框架材质</label>
+                                <select id="addHighlightFrameMaterial">
+                                    <option value="">请选择框架材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="addHighlightFunction">功能</label>
+                                <input type="text" id="addHighlightFunction" placeholder="例如：可调节靠背">
+                            </div>
+                        </div>
+                        
+                        <!-- 材质信息 - 仅对桌子显示 -->
+                        <div id="addTableMaterialFields" style="display: none;">
+                            <div class="form-group">
+                                <label for="addHighlightPanelMaterial">面板材质</label>
+                                <select id="addHighlightPanelMaterial">
+                                    <option value="">请选择面板材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="addHighlightTableLegMaterial">脚材质</label>
+                                <select id="addHighlightTableLegMaterial">
+                                    <option value="">请选择脚材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="addHighlightTableFunction">功能</label>
+                                <input type="text" id="addHighlightTableFunction" placeholder="例如：可伸缩设计">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="addHighlightImageUrl">产品图片URL（可选）</label>
+                            <input type="url" id="addHighlightImageUrl" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label for="addHighlightImageFile">本地产品图片（可选）</label>
+                            <input type="file" id="addHighlightImageFile" accept="image/*">
+                            <small class="form-help">若同时填写URL并选择本地图片，将优先使用本地图片。</small>
+                            <div class="image-preview" id="addHighlightImagePreview" style="display:none;">
+                                <img id="addHighlightImagePreviewImg" alt="预览" />
+                            </div>
+                        </div>
+                        
+                        <!-- 设计点管理 -->
+                        <div class="form-group">
+                            <label>设计点管理</label>
+                            <div class="design-points-container">
+                                <div id="addDesignPointsList" class="design-points-list">
+                                    <!-- 设计点列表将在这里动态生成 -->
+                                </div>
+                                <button type="button" class="btn btn-secondary" onclick="addDesignPoint('add')">
+                                    <i class="fas fa-plus"></i> 添加设计点
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 场景图管理 -->
+                        <div class="form-group">
+                            <label>场景图管理</label>
+                            <div class="scene-images-container">
+                                <div id="addSceneImagesList" class="scene-images-list">
+                                    <!-- 场景图列表将在这里动态生成 -->
+                                </div>
+                                <button type="button" class="btn btn-secondary" onclick="addSceneImage('add')">
+                                    <i class="fas fa-plus"></i> 添加场景图
+                                </button>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeAddHighlightModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑产品卖点模态框 -->
+        <div class="modal" id="editHighlightModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>编辑产品卖点</h2>
+                    <button class="close-btn" onclick="closeEditHighlightModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editHighlightForm">
+                        <input type="hidden" id="editHighlightId">
+                        <div class="form-group">
+                            <label for="editHighlightName">产品名称</label>
+                            <input type="text" id="editHighlightName" placeholder="例如：现代简约沙发" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editHighlightParentModel">父款型号</label>
+                            <input type="text" id="editHighlightParentModel" placeholder="例如：SF-2024-001" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editHighlightCategory">产品分类</label>
+                            <select id="editHighlightCategory" required>
+                                <option value="">请选择产品分类</option>
+                                <option value="seating">坐具</option>
+                                <option value="table">桌子</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editHighlightDescription">卖点描述</label>
+                            <textarea id="editHighlightDescription" rows="3" placeholder="详细描述产品的主要卖点和特色..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editHighlightFeatures">核心卖点（用逗号分隔）</label>
+                            <input type="text" id="editHighlightFeatures" placeholder="例如：舒适耐用,现代设计,易清洁">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>参考链接</label>
+                            <div class="reference-links-container">
+                                <input type="url" id="editHighlightReferenceLink1" placeholder="参考链接 1 (https://...)" class="reference-link-input">
+                                <input type="url" id="editHighlightReferenceLink2" placeholder="参考链接 2 (https://...)" class="reference-link-input">
+                                <input type="url" id="editHighlightReferenceLink3" placeholder="参考链接 3 (https://...)" class="reference-link-input">
+                            </div>
+                            <small class="form-help">可选，用于参考的产品链接</small>
+                        </div>
+                        
+                        <!-- 材质信息 - 仅对坐具显示 -->
+                        <div id="editMaterialFields" style="display: none;">
+                            <div class="form-group">
+                                <label for="editHighlightFabricMaterial">面料材质</label>
+                                <select id="editHighlightFabricMaterial">
+                                    <option value="">请选择面料材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editHighlightLegMaterial">脚材质</label>
+                                <select id="editHighlightLegMaterial">
+                                    <option value="">请选择脚材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editHighlightSpongeMaterial">海绵材质</label>
+                                <select id="editHighlightSpongeMaterial">
+                                    <option value="">请选择海绵材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editHighlightFrameMaterial">框架材质</label>
+                                <select id="editHighlightFrameMaterial">
+                                    <option value="">请选择框架材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editHighlightFunction">功能</label>
+                                <input type="text" id="editHighlightFunction" placeholder="例如：可调节靠背">
+                            </div>
+                        </div>
+                        
+                        <!-- 材质信息 - 仅对桌子显示 -->
+                        <div id="editTableMaterialFields" style="display: none;">
+                            <div class="form-group">
+                                <label for="editHighlightPanelMaterial">面板材质</label>
+                                <select id="editHighlightPanelMaterial">
+                                    <option value="">请选择面板材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editHighlightTableLegMaterial">脚材质</label>
+                                <select id="editHighlightTableLegMaterial">
+                                    <option value="">请选择脚材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editHighlightTableFunction">功能</label>
+                                <input type="text" id="editHighlightTableFunction" placeholder="例如：可伸缩设计">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="editHighlightImageUrl">产品图片URL（可选）</label>
+                            <input type="url" id="editHighlightImageUrl" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label for="editHighlightImageFile">本地产品图片（可选）</label>
+                            <input type="file" id="editHighlightImageFile" accept="image/*">
+                            <small class="form-help">若同时填写URL并选择本地图片，将优先使用本地图片。</small>
+                            <div class="image-preview" id="editHighlightImagePreview" style="display:none;">
+                                <img id="editHighlightImagePreviewImg" alt="预览" />
+                            </div>
+                        </div>
+                        
+                        <!-- 设计点管理 -->
+                        <div class="form-group">
+                            <label>设计点管理</label>
+                            <div class="design-points-container">
+                                <div id="editDesignPointsList" class="design-points-list">
+                                    <!-- 设计点列表将在这里动态生成 -->
+                                </div>
+                                <button type="button" class="btn btn-secondary" onclick="addDesignPoint('edit')">
+                                    <i class="fas fa-plus"></i> 添加设计点
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 场景图管理 -->
+                        <div class="form-group">
+                            <label>场景图管理</label>
+                            <div class="scene-images-container">
+                                <div id="editSceneImagesList" class="scene-images-list">
+                                    <!-- 场景图列表将在这里动态生成 -->
+                                </div>
+                                <button type="button" class="btn btn-secondary" onclick="addSceneImage('edit')">
+                                    <i class="fas fa-plus"></i> 添加场景图
+                                </button>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeEditHighlightModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存修改
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 产品卖点上传模态框 -->
+        <div class="modal" id="highlightUploadModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>上传产品卖点数据</h2>
+                    <button class="close-btn" onclick="closeHighlightUploadModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="upload-area" id="highlightUploadArea">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>拖拽 Excel 与图片 文件到此处或点击选择文件</p>
+                        <input type="file" id="highlightFileInput" accept=".xlsx,.xls,image/*" multiple style="display: none;">
+                        <button class="btn btn-secondary" onclick="event.stopPropagation();document.getElementById('highlightFileInput').click()">
+                            选择文件（可多选）
+                        </button>
+                    </div>
+                    <div class="upload-instructions">
+                        <h3>产品卖点Excel与图片上传说明：</h3>
+                        <ul>
+                            <li>第一列：产品名称</li>
+                            <li>第二列：父款型号</li>
+                            <li>第三列：产品分类（seating、table）</li>
+                            <li>第四列：卖点描述</li>
+                            <li>第五列：核心卖点（用逗号分隔）</li>
+                            <li>第六列：参考链接1（可选）</li>
+                            <li>第七列：参考链接2（可选）</li>
+                            <li>第八列：参考链接3（可选）</li>
+                            <li>第九列：图片文件名 或 图片URL（可选）</li>
+                            <li>第十列：面料材质（仅坐具，可选）</li>
+                            <li>第十一列：脚材质（仅坐具，可选）</li>
+                            <li>第十二列：海绵材质（仅坐具，可选）</li>
+                            <li>第十三列：框架材质（仅坐具，可选）</li>
+                            <li>第十四列：功能（可选）</li>
+                            <li>如使用本地图片，请与Excel一同选择相应图片文件；第九列填写文件名（如 <code>product1.jpg</code>），系统会自动匹配。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设计点编辑模态框 -->
+        <div class="modal" id="designPointEditModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>编辑设计点</h2>
+                    <button class="close-btn" onclick="closeDesignPointEditModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="designPointEditForm">
+                        <input type="hidden" id="editDesignPointId">
+                        <input type="hidden" id="editDesignPointHighlightId">
+                        
+                        <div class="form-group">
+                            <label for="editDesignPointTitle">设计点标题</label>
+                            <input type="text" id="editDesignPointTitle" placeholder="例如：实木框架设计" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editDesignPointDescription">设计点描述</label>
+                            <textarea id="editDesignPointDescription" rows="3" placeholder="详细描述这个设计点的特点和优势..." required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editDesignPointImageUrl">设计点图片URL（可选）</label>
+                            <input type="url" id="editDesignPointImageUrl" placeholder="https://...">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editDesignPointImageFile">本地设计点图片（可选）</label>
+                            <input type="file" id="editDesignPointImageFile" accept="image/*">
+                            <small class="form-help">若同时填写URL并选择本地图片，将优先使用本地图片。</small>
+                            <div class="image-preview" id="editDesignPointImagePreview" style="display:none;">
+                                <img id="editDesignPointImagePreviewImg" alt="预览" />
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" onclick="deleteDesignPoint()">
+                                <i class="fas fa-trash"></i> 删除设计点
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="closeDesignPointEditModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存修改
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 场景图编辑模态框 -->
+        <div class="modal" id="sceneImageEditModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>编辑场景图</h2>
+                    <button class="close-btn" onclick="closeSceneImageEditModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="sceneImageEditForm">
+                        <input type="hidden" id="editSceneImageId">
+                        <input type="hidden" id="editSceneImageHighlightId">
+                        
+                        <div class="form-group">
+                            <label for="editSceneImageUrl">场景图URL（可选）</label>
+                            <input type="url" id="editSceneImageUrl" placeholder="https://..." oninput="previewEditSceneImage()">
+                            <small class="form-help">填写URL或选择本地图片，二选一即可</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editSceneImageFile">本地场景图（可选）</label>
+                            <input type="file" id="editSceneImageFile" accept="image/*" onchange="previewEditSceneImage()">
+                            <small class="form-help">若同时填写URL并选择本地图片，将优先使用本地图片。</small>
+                            <div class="image-preview" id="editSceneImageImagePreview" style="display:none;">
+                                <img id="editSceneImageImagePreviewImg" alt="预览" />
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" onclick="deleteSceneImage()">
+                                <i class="fas fa-trash"></i> 删除场景图
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="closeSceneImageEditModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存修改
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="xlsx.full.min.js"></script>
+    <script src="script.js?v=2"></script>
+</body>
+</html>

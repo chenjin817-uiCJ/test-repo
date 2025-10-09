@@ -1,0 +1,8 @@
+面料型号,面料描述,面料特性,图片URL,平台分类,价格,币种,面料厂家,面料归类,面料成分,面料克重,面料颜色
+F001,"采用100%纯棉材质制作，天然环保，触感柔软舒适，透气性极佳，适合四季使用",透气,柔软,易清洁,天然材质,https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=1200&auto=format&fit=crop,amazon,25.50,CNY,华纺集团,天然纤维,100%棉,180g/m²,米白色
+F002,"优质亚麻与棉纤维混纺，保持天然纤维的舒适性，同时具有抗菌、吸湿排汗等特性",天然纤维,抗菌,吸湿排汗,环保,https://images.unsplash.com/photo-1582582494705-f8ce0b0c24fe?q=80&w=1200&auto=format&fit=crop,website,3.80,USD,Linen Textiles Co.,混纺面料,60%亚麻 40%棉,200g/m²,浅灰色
+F003,"高档丝绒材质，具有奢华质感和优雅光泽，保暖性能优异，适合高端家具使用",奢华质感,保暖,防滑,易维护,https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?q=80&w=1200&auto=format&fit=crop,wayfair,45.00,USD,Luxury Fabrics Ltd.,装饰面料,100%聚酯纤维,350g/m²,深蓝色
+F004,"现代合成纤维材质，具有出色的耐用性和抗皱性能，色彩保持持久，易于维护",耐用,抗皱,快干,色彩鲜艳,https://images.unsplash.com/photo-1562157873-818bc0726f68?q=80&w=1200&auto=format&fit=crop,amazon,18.00,CNY,合成纤维厂,合成纤维,100%聚酯纤维,150g/m²,白色
+F005,"优质羊毛与天然纤维混纺，保暖性极佳，具有良好的弹性和抗静电性能",保暖,天然,弹性好,抗静电,https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=1200&auto=format&fit=crop,website,2.50,USD,Wool Masters,混纺面料,70%羊毛 30%腈纶,280g/m²,棕色
+F006,"环保竹纤维材质，具有天然的抗菌性能，透气性佳，柔软舒适，符合现代环保理念",抗菌,环保,透气,柔软,https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=1200&auto=format&fit=crop,wayfair,32.00,CNY,绿色纺织,天然纤维,100%竹纤维,160g/m²,浅绿色
+
