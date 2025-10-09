@@ -427,6 +427,65 @@
             background: #c0392b;
         }
 
+        /* 上传区域样式 */
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: #5a6fd8;
+            background: #f0f2f5;
+        }
+
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .upload-instructions {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .upload-instructions h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .upload-instructions ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .upload-instructions li {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .upload-instructions table {
+            font-size: 0.9rem;
+        }
+
+        .upload-instructions th,
+        .upload-instructions td {
+            text-align: left;
+        }
+
+        .page-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
         @media (max-width: 768px) {
             .categories-grid {
                 grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -457,6 +516,16 @@
         <div class="page-header">
             <h1 class="page-title">办公椅配件</h1>
             <p class="page-subtitle">专业办公椅配件分类与详细介绍</p>
+            
+            <!-- 操作按钮 -->
+            <div class="page-actions" id="pageActions">
+                <button class="btn btn-secondary" onclick="showAddItemModal()">
+                    <i class="fas fa-plus"></i> 新增配件
+                </button>
+                <button class="btn btn-primary" onclick="showUploadModal()">
+                    <i class="fas fa-upload"></i> 上传Excel
+                </button>
+            </div>
         </div>
 
         <!-- 分类网格 -->
@@ -597,6 +666,118 @@
         </div>
     </div>
 
+    <!-- 新增配件模态框 -->
+    <div class="modal" id="addItemModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>新增配件</h2>
+                <button class="close-btn" onclick="closeAddModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addItemForm">
+                    <div class="form-group">
+                        <label for="addItemCategory">配件分类</label>
+                        <select id="addItemCategory" required>
+                            <option value="">请选择配件分类</option>
+                            <option value="headrest">头枕</option>
+                            <option value="armrest">扶手</option>
+                            <option value="backrest">靠背</option>
+                            <option value="lumbar">腰托</option>
+                            <option value="seat">坐垫</option>
+                            <option value="chassis">底盘</option>
+                            <option value="base">五星脚</option>
+                            <option value="casters">椅轮</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="addItemTitle">配件名称</label>
+                        <input type="text" id="addItemTitle" required placeholder="例如：可调节扶手">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="addItemDescription">配件描述</label>
+                        <textarea id="addItemDescription" required placeholder="详细描述配件的功能和特点"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="addItemImage">图片URL</label>
+                        <input type="url" id="addItemImage" placeholder="https://...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>功能特性</label>
+                        <div id="addFeaturesContainer" class="features-input">
+                            <!-- 动态生成的功能特性输入框 -->
+                        </div>
+                        <button type="button" class="add-feature-btn" onclick="addFeatureInputAdd()">
+                            <i class="fas fa-plus"></i> 添加特性
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveNewItem()">
+                    <i class="fas fa-save"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excel上传模态框 -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>上传配件数据</h2>
+                <button class="close-btn" onclick="closeUploadModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: #667eea; margin-bottom: 20px;"></i>
+                    <p>拖拽 Excel 文件到此处或点击选择文件</p>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
+                        选择Excel文件
+                    </button>
+                </div>
+                
+                <div class="upload-instructions">
+                    <h3>Excel格式说明：</h3>
+                    <ul>
+                        <li>第一列：配件分类（头枕、扶手、靠背、腰托、坐垫、底盘、五星脚、椅轮）</li>
+                        <li>第二列：配件名称</li>
+                        <li>第三列：配件描述</li>
+                        <li>第四列：图片URL（可选）</li>
+                        <li>第五列：功能特性（用逗号分隔，可选）</li>
+                    </ul>
+                    <p><strong>示例：</strong></p>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                        <tr style="background: #f8f9fa;">
+                            <th style="border: 1px solid #dee2e6; padding: 8px;">分类</th>
+                            <th style="border: 1px solid #dee2e6; padding: 8px;">名称</th>
+                            <th style="border: 1px solid #dee2e6; padding: 8px;">描述</th>
+                            <th style="border: 1px solid #dee2e6; padding: 8px;">图片</th>
+                            <th style="border: 1px solid #dee2e6; padding: 8px;">特性</th>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #dee2e6; padding: 8px;">扶手</td>
+                            <td style="border: 1px solid #dee2e6; padding: 8px;">可调节扶手</td>
+                            <td style="border: 1px solid #dee2e6; padding: 8px;">支持多维度调节的扶手系统</td>
+                            <td style="border: 1px solid #dee2e6; padding: 8px;">https://...</td>
+                            <td style="border: 1px solid #dee2e6; padding: 8px;">高度调节,宽度调节,角度调节</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="script.js"></script>
     <script>
         // 办公椅配件数据
@@ -852,11 +1033,21 @@
             // 显示配件容器
             document.getElementById('itemsContainer').classList.add('active');
             
+            // 隐藏操作按钮（在分类详情页面隐藏）
+            document.getElementById('pageActions').style.display = 'none';
+            
             // 设置标题
             document.getElementById('categoryTitleDisplay').textContent = categoryData.title;
             
             // 渲染配件卡片
             renderItems(categoryData.items);
+        }
+
+        // 显示分类选择页面
+        function showCategories() {
+            document.getElementById('categoriesGrid').style.display = 'grid';
+            document.getElementById('itemsContainer').classList.remove('active');
+            document.getElementById('pageActions').style.display = 'flex';
         }
 
         // 编辑配件
@@ -992,6 +1183,245 @@
             modal.classList.remove('show');
             modal.style.display = 'none';
             modal.style.pointerEvents = '';
+        }
+
+        // 显示新增配件模态框
+        function showAddItemModal() {
+            // 重置表单
+            document.getElementById('addItemForm').reset();
+            document.getElementById('addFeaturesContainer').innerHTML = '';
+            addFeatureInputAdd(); // 添加一个空的特性输入框
+            
+            // 显示模态框
+            const modal = document.getElementById('addItemModal');
+            modal.classList.add('show');
+            modal.style.display = 'flex';
+            modal.style.pointerEvents = 'auto';
+        }
+
+        // 关闭新增配件模态框
+        function closeAddModal() {
+            const modal = document.getElementById('addItemModal');
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.style.pointerEvents = '';
+        }
+
+        // 为新增模态框添加特性输入框
+        function addFeatureInputAdd() {
+            const container = document.getElementById('addFeaturesContainer');
+            const featureItem = document.createElement('div');
+            featureItem.className = 'feature-input-item';
+            featureItem.innerHTML = `
+                <input type="text" placeholder="输入特性">
+                <button type="button" class="remove-feature" onclick="removeFeatureInput(this)">×</button>
+            `;
+            container.appendChild(featureItem);
+        }
+
+        // 保存新配件
+        function saveNewItem() {
+            const category = document.getElementById('addItemCategory').value;
+            const title = document.getElementById('addItemTitle').value.trim();
+            const description = document.getElementById('addItemDescription').value.trim();
+            const image = document.getElementById('addItemImage').value.trim();
+
+            if (!category || !title || !description) {
+                alert('请填写完整信息');
+                return;
+            }
+
+            // 获取功能特性
+            const featureInputs = document.querySelectorAll('#addFeaturesContainer .feature-input-item input');
+            const features = Array.from(featureInputs)
+                .map(input => input.value.trim())
+                .filter(feature => feature);
+
+            // 创建新配件
+            const newItem = {
+                id: Date.now(),
+                title: title,
+                description: description,
+                image: image,
+                features: features
+            };
+
+            // 添加到对应分类
+            const categoryData = officeChairData[category];
+            if (categoryData) {
+                categoryData.items.push(newItem);
+                
+                // 如果当前正在查看这个分类，重新渲染
+                if (currentCategory === category) {
+                    renderItems(categoryData.items);
+                }
+                
+                closeAddModal();
+                alert('新增成功');
+            }
+        }
+
+        // 显示Excel上传模态框
+        function showUploadModal() {
+            const modal = document.getElementById('uploadModal');
+            modal.classList.add('show');
+            modal.style.display = 'flex';
+            modal.style.pointerEvents = 'auto';
+            
+            // 设置文件输入事件监听器
+            setupFileUpload();
+        }
+
+        // 关闭Excel上传模态框
+        function closeUploadModal() {
+            const modal = document.getElementById('uploadModal');
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.style.pointerEvents = '';
+        }
+
+        // 设置文件上传功能
+        function setupFileUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadArea = document.getElementById('uploadArea');
+            
+            // 文件选择事件
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            // 拖拽上传事件
+            uploadArea.addEventListener('dragover', handleDragOver);
+            uploadArea.addEventListener('dragleave', handleDragLeave);
+            uploadArea.addEventListener('drop', handleDrop);
+        }
+
+        // 处理文件选择
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                processExcelFile(file);
+            }
+        }
+
+        // 处理拖拽悬停
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        // 处理拖拽离开
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        // 处理拖拽放置
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.name.match(/\.(xlsx|xls)$/)) {
+                    processExcelFile(file);
+                } else {
+                    alert('请选择Excel文件（.xlsx或.xls格式）');
+                }
+            }
+        }
+
+        // 处理Excel文件
+        function processExcelFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    const added = parseExcelData(jsonData);
+                    if (added.length > 0) {
+                        closeUploadModal();
+                        alert(`成功导入 ${added.length} 个配件数据！`);
+                        
+                        // 如果当前正在查看导入的分类，重新渲染
+                        if (currentCategory && officeChairData[currentCategory]) {
+                            renderItems(officeChairData[currentCategory].items);
+                        }
+                    } else {
+                        alert('Excel文件中没有找到有效的配件数据');
+                    }
+                } catch (error) {
+                    console.error('Excel解析错误:', error);
+                    alert('Excel文件解析失败，请检查文件格式');
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 解析Excel数据
+        function parseExcelData(data) {
+            const added = [];
+            
+            if (!data || data.length === 0) return added;
+            
+            // 中文分类名到英文key的映射
+            const categoryMapping = {
+                '头枕': 'headrest',
+                '扶手': 'armrest',
+                '靠背': 'backrest',
+                '腰托': 'lumbar',
+                '坐垫': 'seat',
+                '底盘': 'chassis',
+                '五星脚': 'base',
+                '椅轮': 'casters'
+            };
+            
+            // 跳过标题行，从第二行开始处理数据
+            for (let i = 1; i < data.length; i++) {
+                const row = data[i];
+                if (!row || row.length < 3) continue;
+                
+                const categoryText = (row[0] || '').toString().trim();
+                const title = (row[1] || '').toString().trim();
+                const description = (row[2] || '').toString().trim();
+                const image = (row[3] || '').toString().trim();
+                const featuresStr = (row[4] || '').toString().trim();
+                
+                if (!categoryText || !title || !description) continue;
+                
+                // 将中文分类名转换为英文key
+                const category = categoryMapping[categoryText];
+                
+                // 验证分类是否有效
+                if (!category || !officeChairData[category]) {
+                    console.warn(`无效的分类: ${categoryText}`);
+                    continue;
+                }
+                
+                // 解析功能特性
+                const features = featuresStr ? 
+                    featuresStr.split(/[,，]/).map(f => f.trim()).filter(f => f) : 
+                    [];
+                
+                // 创建新配件
+                const newItem = {
+                    id: Date.now() + i,
+                    title: title,
+                    description: description,
+                    image: image,
+                    features: features
+                };
+                
+                // 添加到对应分类
+                officeChairData[category].items.push(newItem);
+                added.push({ category: categoryText, title });
+            }
+            
+            return added;
         }
 
         // 页面加载完成后的初始化
