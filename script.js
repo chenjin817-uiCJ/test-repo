@@ -442,12 +442,46 @@ function initializeApp() {
     try {
         const storedFabrics = localStorage.getItem('fabrics_v1');
         if (storedFabrics) {
-            fabrics = JSON.parse(storedFabrics);
+            const parsed = JSON.parse(storedFabrics);
+            if (Array.isArray(parsed)) {
+                // 验证和清理数据
+                fabrics = parsed.filter(item => {
+                    // 检查基本结构
+                    if (!item || typeof item !== 'object') return false;
+                    
+                    // 检查是否有有效的标识字段
+                    const hasValidId = item.id && item.id !== '';
+                    const hasValidCode = (item.colorCode && item.colorCode !== '') || 
+                                       (item.code && item.code !== '') || 
+                                       (item.name && item.name !== '');
+                    
+                    return hasValidId && hasValidCode;
+                });
+                
+                // 保留小图片的base64数据，清理过大的base64数据
+                fabrics = fabrics.map(item => {
+                    if (item.imageUrl && item.imageUrl.startsWith('data:image/')) {
+                        // 如果base64数据过大（超过200KB），则清理
+                        if (item.imageUrl.length > 200 * 1024) {
+                            console.log('清理过大的base64图片数据');
+                            return { ...item, imageUrl: '' };
+                        }
+                    }
+                    return item;
+                });
+                
+                console.log('从localStorage加载面料数据，数据条数:', fabrics.length);
+            } else {
+                fabrics = [...sampleFabrics];
+                console.log('面料数据格式错误，使用默认数据，数据条数:', fabrics.length);
+            }
         } else {
             fabrics = [...sampleFabrics];
+            console.log('使用默认面料数据，数据条数:', fabrics.length);
         }
     } catch (e) {
         fabrics = [...sampleFabrics];
+        console.log('面料数据加载失败，使用默认数据，数据条数:', fabrics.length);
     }
     filteredFabrics = [...fabrics];
 
@@ -2506,7 +2540,7 @@ function splitExcelAndImages(files) {
     return { excelFile, imageFiles };
 }
 
-// 工具：构建文件名到ObjectURL的映射
+// 工具：构建文件名到base64的映射（限制大小）
 function buildUploadedImageMap(imageFiles) {
     uploadedImageMap = {};
     const readers = imageFiles.map(img => new Promise((resolve) => {
@@ -2514,14 +2548,34 @@ function buildUploadedImageMap(imageFiles) {
         const lower = filename.toLowerCase();
         const noExt = lower.replace(/\.[a-z0-9]+$/, '');
         const compact = lower.replace(/\s+/g, '');
+        
+        // 检查文件大小（限制为500KB）
+        if (img.size > 500 * 1024) {
+            console.warn(`图片 ${filename} 太大 (${(img.size/1024).toFixed(1)}KB)，将跳过`);
+            resolve();
+            return;
+        }
+        
         const r = new FileReader();
         r.onload = () => {
-            uploadedImageMap[lower] = r.result;
-            uploadedImageMap[noExt] = r.result;
-            uploadedImageMap[compact] = r.result;
+            // 检查base64字符串长度（限制为300KB）
+            const base64 = r.result;
+            if (base64.length > 300 * 1024) {
+                console.warn(`图片 ${filename} base64太大 (${(base64.length/1024).toFixed(1)}KB)，将跳过`);
+                resolve();
+                return;
+            }
+            
+            uploadedImageMap[lower] = base64;
+            uploadedImageMap[noExt] = base64;
+            uploadedImageMap[compact] = base64;
+            console.log(`图片 ${filename} 已处理，大小: ${(base64.length/1024).toFixed(1)}KB`);
             resolve();
         };
-        r.onerror = () => { resolve(); };
+        r.onerror = () => { 
+            console.error(`图片 ${filename} 读取失败`);
+            resolve(); 
+        };
         r.readAsDataURL(img);
     }));
     return Promise.all(readers);
@@ -2534,9 +2588,61 @@ function saveMaterials() {
 
 // 保存面料到本地存储
 function saveFabrics() {
-    try { localStorage.setItem('fabrics_v1', JSON.stringify(fabrics)); } catch (_) {}
+    try { 
+        // 只清理过大的base64图片数据，保留小图片
+        const cleanedFabrics = fabrics.map(fabric => {
+            if (fabric.imageUrl && fabric.imageUrl.startsWith('data:image/')) {
+                // 如果base64数据过大（超过200KB），则清理
+                if (fabric.imageUrl.length > 200 * 1024) {
+                    console.log('清理过大的base64图片数据以节省空间');
+                    return { ...fabric, imageUrl: '' };
+                }
+            }
+            return fabric;
+        });
+        
+        const dataToSave = JSON.stringify(cleanedFabrics);
+        const dataSize = (dataToSave.length / 1024).toFixed(2);
+        console.log(`准备保存面料数据，大小: ${dataSize}KB`);
+        
+        localStorage.setItem('fabrics_v1', dataToSave); 
+        console.log('面料数据已保存到localStorage，数据条数:', cleanedFabrics.length);
+        
+        // 更新内存中的数据
+        fabrics = cleanedFabrics;
+        
+    } catch (error) {
+        console.error('保存面料数据失败:', error);
+        if (error.name === 'QuotaExceededError') {
+            alert('存储空间不足！请尝试以下解决方案：\n1. 清除浏览器缓存\n2. 减少上传的图片数量\n3. 使用网络图片URL而不是本地图片文件');
+            // 尝试清理一些数据
+            clearOldImageData();
+        }
+    }
     // 更新色板型号选择框
     populateColorCodeSelects();
+}
+
+// 清理旧的图片数据以释放存储空间
+function clearOldImageData() {
+    try {
+        // 移除所有blob: URL的图片数据
+        const cleanedFabrics = fabrics.map(fabric => {
+            if (fabric.imageUrl && fabric.imageUrl.startsWith('blob:')) {
+                return { ...fabric, imageUrl: '' };
+            }
+            return fabric;
+        });
+        
+        // 尝试保存清理后的数据
+        localStorage.setItem('fabrics_v1', JSON.stringify(cleanedFabrics));
+        fabrics = cleanedFabrics;
+        console.log('已清理图片数据以释放存储空间');
+        alert('已清理图片数据以释放存储空间，请重新上传图片');
+    } catch (e) {
+        console.error('清理数据失败:', e);
+        alert('存储空间严重不足，请清除浏览器缓存后重试');
+    }
 }
 
 // ==================== 面料相关功能 ====================
@@ -3617,13 +3723,35 @@ function handleAddFabric(e) {
 function deleteFabric(fabricId) {
     const fabric = fabrics.find(f => f.id === fabricId);
     if (!fabric) return;
-    const confirmDelete = confirm(`确定删除 "${fabric.code}" 吗？该操作不可恢复。`);
+    
+    // 使用 colorCode 或 code 来显示确认信息
+    const displayName = fabric.colorCode || fabric.code || '此面料';
+    const confirmDelete = confirm(`确定删除 "${displayName}" 吗？该操作不可恢复。`);
     if (!confirmDelete) return;
 
     fabrics = fabrics.filter(f => f.id !== fabricId);
     saveFabrics();
-    applyFabricFilters();
-    renderFabrics();
+    
+    // 检查当前在哪个页面，调用相应的渲染函数
+    const colorboardPage = document.getElementById('colorboard');
+    const fabricManagementPage = document.getElementById('fabricManagement');
+    
+    if (colorboardPage && colorboardPage.classList.contains('active')) {
+        // 在色板管理页面
+        applyColorboardFilters();
+        renderColorboard();
+    } else if (fabricManagementPage && fabricManagementPage.classList.contains('active')) {
+        // 在面料管理页面
+        applyFabricFilters();
+        renderFabrics();
+    } else {
+        // 默认刷新两个页面
+        applyFabricFilters();
+        renderFabrics();
+        applyColorboardFilters();
+        renderColorboard();
+    }
+    
     closeFabricModal();
 }
 
@@ -3697,6 +3825,9 @@ function processFabricExcelFile(file) {
             const { added, skippedDuplicates } = parseFabricExcelData(jsonData);
             if (added.length > 0) {
                 fabrics = [...fabrics, ...added];
+                console.log('面料数据上传成功，当前总数据条数:', fabrics.length);
+                console.log('上传的图片映射键:', Object.keys(uploadedFabricImageMap));
+                console.log('新增的面料数据:', added);
                 saveFabrics();
                 applyFabricFilters();
                 renderFabrics();
@@ -3782,17 +3913,30 @@ function parseFabricExcelData(data) {
         let resolvedImageUrl = '';
         if (imageCell) {
             const raw = imageCell.toString().trim();
+            console.log(`处理图片单元格: "${raw}"`);
+            
             const base = decodeURI(raw).split(/[\\/]/).pop().trim();
             const lowerName = base.toLowerCase();
             const noExt = lowerName.replace(/\.[a-z0-9]+$/, '');
             const compact = lowerName.replace(/\s+/g, '');
             const candidates = [lowerName, noExt, compact];
+            
+            console.log(`图片匹配候选: [${candidates.join(', ')}]`);
+            console.log(`可用的图片映射键: [${Object.keys(uploadedFabricImageMap).join(', ')}]`);
+            
             for (const c of candidates) {
-                if (uploadedFabricImageMap[c]) { resolvedImageUrl = uploadedFabricImageMap[c]; break; }
+                if (uploadedFabricImageMap[c]) { 
+                    resolvedImageUrl = uploadedFabricImageMap[c]; 
+                    console.log(`图片匹配成功: ${c} -> ${resolvedImageUrl.substring(0, 50)}...`);
+                    break; 
+                }
             }
             if (!resolvedImageUrl) {
-                if (/^https?:\/\//i.test(raw) || raw.startsWith('data:')) {
+                if (/^https?:\/\//i.test(raw) || raw.startsWith('data:') || raw.startsWith('blob:')) {
                     resolvedImageUrl = raw;
+                    console.log(`使用原始URL: ${resolvedImageUrl.substring(0, 50)}...`);
+                } else {
+                    console.log(`图片未匹配: "${raw}"`);
                 }
             }
         }
@@ -3843,23 +3987,108 @@ function normalizeCurrency(val) {
     return '';
 }
 
+// 图片压缩函数
+function compressImage(file, filename, callback) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = function() {
+        // 计算压缩后的尺寸
+        let { width, height } = img;
+        const maxWidth = 800;
+        const maxHeight = 600;
+        const maxSize = 500 * 1024; // 500KB
+        
+        // 按比例缩放
+        if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = width * ratio;
+            height = height * ratio;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // 绘制压缩后的图片
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // 尝试不同的质量直到文件大小合适
+        let quality = 0.8;
+        let dataUrl;
+        
+        do {
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+            if (dataUrl.length <= maxSize) {
+                console.log(`图片 ${filename} 压缩完成，质量: ${quality}, 大小: ${(dataUrl.length/1024).toFixed(1)}KB`);
+                callback(dataUrl);
+                return;
+            }
+            quality -= 0.1;
+        } while (quality > 0.1);
+        
+        // 如果还是太大，尝试进一步缩小尺寸
+        if (dataUrl.length > maxSize) {
+            const sizeRatio = Math.sqrt(maxSize / dataUrl.length);
+            width = width * sizeRatio;
+            height = height * sizeRatio;
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            console.log(`图片 ${filename} 进一步压缩，最终大小: ${(dataUrl.length/1024).toFixed(1)}KB`);
+        }
+        
+        callback(dataUrl);
+    };
+    
+    img.onerror = function() {
+        console.error(`图片 ${filename} 加载失败`);
+        callback(null);
+    };
+    
+    // 读取文件
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        img.src = e.target.result;
+    };
+    reader.onerror = function() {
+        console.error(`图片 ${filename} 读取失败`);
+        callback(null);
+    };
+    reader.readAsDataURL(file);
+}
+
 // 构建面料文件名映射
 function buildFabricUploadedImageMap(imageFiles) {
     uploadedFabricImageMap = {};
+    console.log('开始处理面料图片文件，数量:', imageFiles.length);
+    
     const readers = imageFiles.map(img => new Promise((resolve) => {
         const filename = img.name;
         const lower = filename.toLowerCase();
         const noExt = lower.replace(/\.[a-z0-9]+$/, '');
         const compact = lower.replace(/\s+/g, '');
-        const r = new FileReader();
-        r.onload = () => {
-            uploadedFabricImageMap[lower] = r.result;
-            uploadedFabricImageMap[noExt] = r.result;
-            uploadedFabricImageMap[compact] = r.result;
+        
+        console.log(`处理图片文件: ${filename}, 大小: ${(img.size/1024).toFixed(1)}KB`);
+        
+        // 检查文件大小（限制为2MB，超过则压缩）
+        if (img.size > 2 * 1024 * 1024) {
+            console.warn(`图片 ${filename} 太大 (${(img.size/1024/1024).toFixed(1)}MB)，将跳过`);
             resolve();
-        };
-        r.onerror = () => { resolve(); };
-        r.readAsDataURL(img);
+            return;
+        }
+        
+        // 使用图片压缩功能
+        compressImage(img, filename, (compressedDataUrl) => {
+            if (compressedDataUrl) {
+                uploadedFabricImageMap[lower] = compressedDataUrl;
+                uploadedFabricImageMap[noExt] = compressedDataUrl;
+                uploadedFabricImageMap[compact] = compressedDataUrl;
+                console.log(`图片 ${filename} 已压缩并处理，映射到: [${lower}, ${noExt}, ${compact}]`);
+            }
+            resolve();
+        });
     }));
     return Promise.all(readers);
 }
@@ -5611,6 +5840,230 @@ function addTestSceneImages() {
 
 // 将测试函数添加到全局作用域，方便在控制台调用
 window.addTestSceneImages = addTestSceneImages;
+
+// 调试函数：检查localStorage中的面料数据
+function checkFabricData() {
+    const stored = localStorage.getItem('fabrics_v1');
+    console.log('localStorage中的面料数据:', stored);
+    if (stored) {
+        try {
+            const parsed = JSON.parse(stored);
+            console.log('解析后的面料数据条数:', parsed.length);
+            console.log('面料数据内容:', parsed);
+        } catch (e) {
+            console.error('解析面料数据失败:', e);
+        }
+    } else {
+        console.log('localStorage中没有面料数据');
+    }
+    
+    console.log('当前内存中的fabrics数组长度:', fabrics.length);
+    console.log('当前内存中的fabrics数组:', fabrics);
+}
+
+// 将调试函数添加到全局作用域
+window.checkFabricData = checkFabricData;
+
+// 检查localStorage使用情况
+function checkStorageUsage() {
+    let totalSize = 0;
+    const items = [];
+    
+    for (let key in localStorage) {
+        if (localStorage.hasOwnProperty(key)) {
+            const size = localStorage[key].length;
+            totalSize += size;
+            items.push({
+                key: key,
+                size: size,
+                sizeKB: (size / 1024).toFixed(2)
+            });
+        }
+    }
+    
+    console.log('localStorage使用情况:');
+    console.log('总大小:', (totalSize / 1024).toFixed(2), 'KB');
+    console.log('各项目详情:', items);
+    
+    // 估算剩余空间（通常限制为5-10MB）
+    const estimatedLimit = 5 * 1024 * 1024; // 5MB
+    const usagePercent = (totalSize / estimatedLimit * 100).toFixed(2);
+    console.log('预估使用率:', usagePercent + '%');
+    
+    if (totalSize > estimatedLimit * 0.8) {
+        console.warn('⚠️ 存储空间使用率较高，建议清理数据');
+    }
+    
+    return { totalSize, items, usagePercent };
+}
+
+// 清理所有blob URL图片数据
+function clearAllBlobImages() {
+    let cleanedCount = 0;
+    
+    // 清理面料数据
+    fabrics = fabrics.map(fabric => {
+        if (fabric.imageUrl && fabric.imageUrl.startsWith('blob:')) {
+            cleanedCount++;
+            return { ...fabric, imageUrl: '' };
+        }
+        return fabric;
+    });
+    
+    // 清理材质数据
+    materials = materials.map(material => {
+        if (material.imageUrl && material.imageUrl.startsWith('blob:')) {
+            cleanedCount++;
+            return { ...material, imageUrl: '' };
+        }
+        return material;
+    });
+    
+    // 保存清理后的数据
+    saveFabrics();
+    saveMaterials();
+    
+    console.log('已清理', cleanedCount, '个blob图片数据');
+    alert(`已清理 ${cleanedCount} 个临时图片数据，释放了存储空间`);
+    
+    return cleanedCount;
+}
+
+// 强制清理localStorage中的所有base64图片数据
+function forceCleanBase64Data() {
+    try {
+        // 获取所有localStorage数据
+        const allKeys = Object.keys(localStorage);
+        let cleanedKeys = [];
+        
+        allKeys.forEach(key => {
+            const value = localStorage.getItem(key);
+            if (value && value.includes('data:image/')) {
+                // 包含base64图片数据的键
+                try {
+                    const parsed = JSON.parse(value);
+                    if (Array.isArray(parsed)) {
+                        // 清理数组中的base64图片
+                        const cleaned = parsed.map(item => {
+                            if (item && typeof item === 'object' && item.imageUrl && item.imageUrl.startsWith('data:image/')) {
+                                return { ...item, imageUrl: '' };
+                            }
+                            return item;
+                        });
+                        localStorage.setItem(key, JSON.stringify(cleaned));
+                        cleanedKeys.push(key);
+                    }
+                } catch (e) {
+                    // 如果不是JSON，直接删除
+                    localStorage.removeItem(key);
+                    cleanedKeys.push(key);
+                }
+            }
+        });
+        
+        console.log('已清理以下键的base64数据:', cleanedKeys);
+        alert(`已清理 ${cleanedKeys.length} 个键的base64图片数据`);
+        
+        // 重新加载页面以应用清理
+        location.reload();
+        
+    } catch (error) {
+        console.error('强制清理失败:', error);
+        alert('清理失败，请手动清除浏览器缓存');
+    }
+}
+
+// 修复损坏的数据
+function repairCorruptedData() {
+    try {
+        // 检查fabrics数据
+        const fabricsData = localStorage.getItem('fabrics_v1');
+        if (fabricsData) {
+            const parsed = JSON.parse(fabricsData);
+            if (Array.isArray(parsed)) {
+                // 过滤掉无效的数据项
+                const validFabrics = parsed.filter(item => 
+                    item && 
+                    typeof item === 'object' && 
+                    item.id && 
+                    (item.colorCode || item.code || item.name)
+                );
+                
+                if (validFabrics.length !== parsed.length) {
+                    console.log(`修复了 ${parsed.length - validFabrics.length} 个损坏的面料数据项`);
+                    localStorage.setItem('fabrics_v1', JSON.stringify(validFabrics));
+                    fabrics = validFabrics;
+                }
+            }
+        }
+        
+        // 检查materials数据
+        const materialsData = localStorage.getItem('materials_v1');
+        if (materialsData) {
+            const parsed = JSON.parse(materialsData);
+            if (Array.isArray(parsed)) {
+                const validMaterials = parsed.filter(item => 
+                    item && 
+                    typeof item === 'object' && 
+                    item.id && 
+                    item.name
+                );
+                
+                if (validMaterials.length !== parsed.length) {
+                    console.log(`修复了 ${parsed.length - validMaterials.length} 个损坏的材质数据项`);
+                    localStorage.setItem('materials_v1', JSON.stringify(validMaterials));
+                    materials = validMaterials;
+                }
+            }
+        }
+        
+        console.log('数据修复完成');
+        alert('数据修复完成，页面将重新加载');
+        location.reload();
+        
+    } catch (error) {
+        console.error('数据修复失败:', error);
+        alert('数据修复失败，请手动清除浏览器缓存');
+    }
+}
+
+// 调试图片显示问题
+function debugImageDisplay() {
+    console.log('=== 图片显示调试信息 ===');
+    console.log('当前面料数据条数:', fabrics.length);
+    
+    fabrics.forEach((fabric, index) => {
+        console.log(`面料 ${index + 1}:`, {
+            id: fabric.id,
+            colorCode: fabric.colorCode,
+            code: fabric.code,
+            name: fabric.name,
+            imageUrl: fabric.imageUrl ? `${fabric.imageUrl.substring(0, 50)}...` : '无图片',
+            imageUrlType: fabric.imageUrl ? (fabric.imageUrl.startsWith('data:') ? 'base64' : 
+                                          fabric.imageUrl.startsWith('blob:') ? 'blob' : 
+                                          fabric.imageUrl.startsWith('http') ? 'url' : 'unknown') : 'none'
+        });
+    });
+    
+    console.log('上传的图片映射:', Object.keys(uploadedFabricImageMap));
+    console.log('=== 调试信息结束 ===');
+}
+
+// 强制重新渲染面料数据
+function forceRenderFabrics() {
+    console.log('强制重新渲染面料数据...');
+    applyFabricFilters();
+    renderFabrics();
+    console.log('渲染完成');
+}
+
+// 将工具函数添加到全局作用域
+window.checkStorageUsage = checkStorageUsage;
+window.clearAllBlobImages = clearAllBlobImages;
+window.forceCleanBase64Data = forceCleanBase64Data;
+window.repairCorruptedData = repairCorruptedData;
+window.debugImageDisplay = debugImageDisplay;
+window.forceRenderFabrics = forceRenderFabrics;
 
 // ==================== 产品卖点文件上传功能 ====================
 
