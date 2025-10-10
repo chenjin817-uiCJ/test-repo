@@ -639,8 +639,17 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="editItemImage">图片URL</label>
+                        <label for="editItemImage">图片URL（可选）</label>
                         <input type="url" id="editItemImage" placeholder="https://...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editItemImageFile">本地图片（可选）</label>
+                        <input type="file" id="editItemImageFile" accept="image/*">
+                        <small class="form-help" style="color: #666; font-size: 0.9rem; margin-top: 5px; display: block;">若同时填写URL并选择本地图片，将优先使用本地图片。</small>
+                        <div class="image-preview" id="editItemImagePreview" style="display:none; margin-top: 10px;">
+                            <img id="editItemImagePreviewImg" alt="预览" style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 1px solid #ddd;">
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -703,8 +712,17 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="addItemImage">图片URL</label>
+                        <label for="addItemImage">图片URL（可选）</label>
                         <input type="url" id="addItemImage" placeholder="https://...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="addItemImageFile">本地图片（可选）</label>
+                        <input type="file" id="addItemImageFile" accept="image/*">
+                        <small class="form-help" style="color: #666; font-size: 0.9rem; margin-top: 5px; display: block;">若同时填写URL并选择本地图片，将优先使用本地图片。</small>
+                        <div class="image-preview" id="addItemImagePreview" style="display:none; margin-top: 10px;">
+                            <img id="addItemImagePreviewImg" alt="预览" style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 1px solid #ddd;">
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -1065,8 +1083,31 @@
             document.getElementById('editItemDescription').value = item.description;
             document.getElementById('editItemImage').value = item.image || '';
 
+            // 重置本地图片文件输入
+            const imageFileInput = document.getElementById('editItemImageFile');
+            if (imageFileInput) {
+                imageFileInput.value = '';
+            }
+
+            // 重置图片预览
+            const preview = document.getElementById('editItemImagePreview');
+            const previewImg = document.getElementById('editItemImagePreviewImg');
+            if (preview && previewImg) {
+                // 清理之前的URL
+                if (previewImg.dataset.objUrl) {
+                    URL.revokeObjectURL(previewImg.dataset.objUrl);
+                    delete previewImg.dataset.objUrl;
+                }
+                previewImg.src = '';
+                preview.style.display = 'none';
+            }
+
             // 渲染功能特性输入框
             renderFeatureInputs(item.features || []);
+
+            // 设置本地图片上传事件监听器
+            console.log('设置编辑配件图片上传功能...');
+            setupEditItemImageUpload();
 
             // 显示模态框
             const modal = document.getElementById('editItemModal');
@@ -1113,13 +1154,60 @@
             button.parentElement.remove();
         }
 
+        // 设置编辑配件图片上传功能
+        function setupEditItemImageUpload() {
+            console.log('开始设置编辑配件图片上传功能...');
+            const imageFileInput = document.getElementById('editItemImageFile');
+            const preview = document.getElementById('editItemImagePreview');
+            const previewImg = document.getElementById('editItemImagePreviewImg');
+            
+            console.log('找到的元素:', { imageFileInput, preview, previewImg });
+            
+            if (imageFileInput && preview && previewImg) {
+                console.log('所有元素都找到了，开始设置事件监听器...');
+                // 移除之前的事件监听器
+                imageFileInput.removeEventListener('change', handleEditItemImageChange);
+                
+                // 添加新的事件监听器
+                imageFileInput.addEventListener('change', handleEditItemImageChange);
+                
+                function handleEditItemImageChange(e) {
+                    console.log('编辑配件图片文件选择事件触发');
+                    const file = e.target.files && e.target.files[0];
+                    console.log('选择的文件:', file);
+                    if (file) {
+                        // 使用URL.createObjectURL创建预览（更高效）
+                        const objUrl = URL.createObjectURL(file);
+                        previewImg.src = objUrl;
+                        preview.style.display = 'block';
+                        
+                        // 清理之前的URL
+                        if (previewImg.dataset.objUrl) {
+                            URL.revokeObjectURL(previewImg.dataset.objUrl);
+                        }
+                        previewImg.dataset.objUrl = objUrl;
+                    } else {
+                        // 清理URL并隐藏预览
+                        if (previewImg.dataset.objUrl) {
+                            URL.revokeObjectURL(previewImg.dataset.objUrl);
+                            delete previewImg.dataset.objUrl;
+                        }
+                        previewImg.src = '';
+                        preview.style.display = 'none';
+                    }
+                }
+            }
+        }
+
         // 保存配件
         function saveItem() {
             const categoryKey = document.getElementById('editItemCategory').value;
             const itemIndex = parseInt(document.getElementById('editItemIndex').value);
             const title = document.getElementById('editItemTitle').value.trim();
             const description = document.getElementById('editItemDescription').value.trim();
-            const image = document.getElementById('editItemImage').value.trim();
+            const imageUrl = document.getElementById('editItemImage').value.trim();
+            const imageFileInput = document.getElementById('editItemImageFile');
+            const imageFile = imageFileInput ? imageFileInput.files[0] : null;
 
             if (!title || !description) {
                 alert('请填写配件名称和描述');
@@ -1132,22 +1220,43 @@
                 .map(input => input.value.trim())
                 .filter(feature => feature);
 
-            // 更新数据
-            const categoryData = officeChairData[categoryKey];
-            const item = categoryData.items[itemIndex];
+            // 处理图片：优先使用本地图片，其次使用URL
+            let finalImageUrl = imageUrl;
             
-            item.title = title;
-            item.description = description;
-            item.image = image;
-            item.features = features;
+            if (imageFile) {
+                // 如果有本地图片文件，转换为base64
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    finalImageUrl = e.target.result;
+                    saveItemWithImage();
+                };
+                reader.readAsDataURL(imageFile);
+            } else {
+                // 没有本地图片，直接保存
+                saveItemWithImage();
+            }
+            
+            function saveItemWithImage() {
+                // 更新数据
+                const categoryData = officeChairData[categoryKey];
+                const item = categoryData.items[itemIndex];
+                
+                item.title = title;
+                item.description = description;
+                item.image = finalImageUrl;
+                item.features = features;
 
-            // 重新渲染
-            renderItems(categoryData.items);
-            
-            // 关闭模态框
-            closeEditModal();
-            
-            alert('保存成功');
+                // 保存到localStorage
+                saveDataToStorage();
+
+                // 重新渲染
+                renderItems(categoryData.items);
+                
+                // 关闭模态框
+                closeEditModal();
+                
+                alert('保存成功');
+            }
         }
 
         // 删除配件确认
@@ -1161,6 +1270,9 @@
 
             // 删除配件
             categoryData.items.splice(itemIndex, 1);
+            
+            // 保存到localStorage
+            saveDataToStorage();
             
             // 重新渲染
             renderItems(categoryData.items);
@@ -1183,6 +1295,13 @@
             modal.classList.remove('show');
             modal.style.display = 'none';
             modal.style.pointerEvents = '';
+            
+            // 清理图片预览的URL
+            const previewImg = document.getElementById('editItemImagePreviewImg');
+            if (previewImg && previewImg.dataset.objUrl) {
+                URL.revokeObjectURL(previewImg.dataset.objUrl);
+                delete previewImg.dataset.objUrl;
+            }
         }
 
         // 显示新增配件模态框
@@ -1191,6 +1310,22 @@
             document.getElementById('addItemForm').reset();
             document.getElementById('addFeaturesContainer').innerHTML = '';
             addFeatureInputAdd(); // 添加一个空的特性输入框
+            
+            // 重置图片预览
+            const preview = document.getElementById('addItemImagePreview');
+            const previewImg = document.getElementById('addItemImagePreviewImg');
+            if (preview && previewImg) {
+                // 清理之前的URL
+                if (previewImg.dataset.objUrl) {
+                    URL.revokeObjectURL(previewImg.dataset.objUrl);
+                    delete previewImg.dataset.objUrl;
+                }
+                previewImg.src = '';
+                preview.style.display = 'none';
+            }
+            
+            // 设置本地图片上传事件监听器
+            setupAddItemImageUpload();
             
             // 显示模态框
             const modal = document.getElementById('addItemModal');
@@ -1205,6 +1340,13 @@
             modal.classList.remove('show');
             modal.style.display = 'none';
             modal.style.pointerEvents = '';
+            
+            // 清理图片预览的URL
+            const previewImg = document.getElementById('addItemImagePreviewImg');
+            if (previewImg && previewImg.dataset.objUrl) {
+                URL.revokeObjectURL(previewImg.dataset.objUrl);
+                delete previewImg.dataset.objUrl;
+            }
         }
 
         // 为新增模态框添加特性输入框
@@ -1219,12 +1361,52 @@
             container.appendChild(featureItem);
         }
 
+        // 设置新增配件图片上传功能
+        function setupAddItemImageUpload() {
+            const imageFileInput = document.getElementById('addItemImageFile');
+            const preview = document.getElementById('addItemImagePreview');
+            const previewImg = document.getElementById('addItemImagePreviewImg');
+            
+            if (imageFileInput && preview && previewImg) {
+                // 移除之前的事件监听器
+                imageFileInput.removeEventListener('change', handleAddItemImageChange);
+                
+                // 添加新的事件监听器
+                imageFileInput.addEventListener('change', handleAddItemImageChange);
+                
+                function handleAddItemImageChange(e) {
+                    const file = e.target.files && e.target.files[0];
+                    if (file) {
+                        // 使用URL.createObjectURL创建预览（更高效）
+                        const objUrl = URL.createObjectURL(file);
+                        previewImg.src = objUrl;
+                        preview.style.display = 'block';
+                        
+                        // 清理之前的URL
+                        if (previewImg.dataset.objUrl) {
+                            URL.revokeObjectURL(previewImg.dataset.objUrl);
+                        }
+                        previewImg.dataset.objUrl = objUrl;
+                    } else {
+                        // 清理URL并隐藏预览
+                        if (previewImg.dataset.objUrl) {
+                            URL.revokeObjectURL(previewImg.dataset.objUrl);
+                            delete previewImg.dataset.objUrl;
+                        }
+                        previewImg.src = '';
+                        preview.style.display = 'none';
+                    }
+                }
+            }
+        }
+
         // 保存新配件
         function saveNewItem() {
             const category = document.getElementById('addItemCategory').value;
             const title = document.getElementById('addItemTitle').value.trim();
             const description = document.getElementById('addItemDescription').value.trim();
-            const image = document.getElementById('addItemImage').value.trim();
+            const imageUrl = document.getElementById('addItemImage').value.trim();
+            const imageFile = document.getElementById('addItemImageFile').files[0];
 
             if (!category || !title || !description) {
                 alert('请填写完整信息');
@@ -1237,27 +1419,48 @@
                 .map(input => input.value.trim())
                 .filter(feature => feature);
 
-            // 创建新配件
-            const newItem = {
-                id: Date.now(),
-                title: title,
-                description: description,
-                image: image,
-                features: features
-            };
+            // 处理图片：优先使用本地图片，其次使用URL
+            let finalImageUrl = imageUrl;
+            
+            if (imageFile) {
+                // 如果有本地图片文件，转换为base64
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    finalImageUrl = e.target.result;
+                    saveItemWithImage();
+                };
+                reader.readAsDataURL(imageFile);
+            } else {
+                // 没有本地图片，直接保存
+                saveItemWithImage();
+            }
+            
+            function saveItemWithImage() {
+                // 创建新配件
+                const newItem = {
+                    id: Date.now(),
+                    title: title,
+                    description: description,
+                    image: finalImageUrl,
+                    features: features
+                };
 
-            // 添加到对应分类
-            const categoryData = officeChairData[category];
-            if (categoryData) {
-                categoryData.items.push(newItem);
-                
-                // 如果当前正在查看这个分类，重新渲染
-                if (currentCategory === category) {
-                    renderItems(categoryData.items);
+                // 添加到对应分类
+                const categoryData = officeChairData[category];
+                if (categoryData) {
+                    categoryData.items.push(newItem);
+                    
+                    // 保存到localStorage
+                    saveDataToStorage();
+                    
+                    // 如果当前正在查看这个分类，重新渲染
+                    if (currentCategory === category) {
+                        renderItems(categoryData.items);
+                    }
+                    
+                    closeAddModal();
+                    alert('新增成功');
                 }
-                
-                closeAddModal();
-                alert('新增成功');
             }
         }
 
@@ -1285,19 +1488,37 @@
             const fileInput = document.getElementById('fileInput');
             const uploadArea = document.getElementById('uploadArea');
             
-            // 文件选择事件
-            fileInput.addEventListener('change', handleFileSelect);
+            // 移除之前的事件监听器（如果有的话）
+            fileInput.removeEventListener('change', handleFileSelect);
+            uploadArea.removeEventListener('dragover', handleDragOver);
+            uploadArea.removeEventListener('dragleave', handleDragLeave);
+            uploadArea.removeEventListener('drop', handleDrop);
             
-            // 拖拽上传事件
+            // 添加新的事件监听器
+            fileInput.addEventListener('change', handleFileSelect);
             uploadArea.addEventListener('dragover', handleDragOver);
             uploadArea.addEventListener('dragleave', handleDragLeave);
             uploadArea.addEventListener('drop', handleDrop);
+            
+            // 添加点击上传区域触发文件选择
+            uploadArea.addEventListener('click', function(e) {
+                // 避免按钮触发重复
+                if (e.target && e.target.closest('button')) return;
+                fileInput.click();
+            });
         }
 
         // 处理文件选择
         function handleFileSelect(e) {
             const file = e.target.files[0];
             if (file) {
+                // 验证文件类型
+                if (!file.name.match(/\.(xlsx|xls)$/)) {
+                    alert('请选择Excel文件（.xlsx或.xls格式）');
+                    return;
+                }
+                
+                console.log('选择的文件:', file.name);
                 processExcelFile(file);
             }
         }
@@ -1322,27 +1543,38 @@
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 const file = files[0];
+                console.log('拖拽的文件:', file.name);
+                
+                // 验证文件类型
                 if (file.name.match(/\.(xlsx|xls)$/)) {
                     processExcelFile(file);
                 } else {
-                    alert('请选择Excel文件（.xlsx或.xls格式）');
+                    alert('请拖拽Excel文件（.xlsx或.xls格式）');
                 }
             }
         }
 
         // 处理Excel文件
         function processExcelFile(file) {
+            console.log('开始处理Excel文件:', file.name);
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
+                    console.log('文件读取完成，开始解析Excel...');
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     const sheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     
+                    console.log('Excel解析完成，数据行数:', jsonData.length);
                     const added = parseExcelData(jsonData);
+                    
                     if (added.length > 0) {
+                        // 保存到localStorage
+                        saveDataToStorage();
+                        
                         closeUploadModal();
                         alert(`成功导入 ${added.length} 个配件数据！`);
                         
@@ -1351,12 +1583,17 @@
                             renderItems(officeChairData[currentCategory].items);
                         }
                     } else {
-                        alert('Excel文件中没有找到有效的配件数据');
+                        alert('Excel文件中没有找到有效的配件数据，请检查数据格式');
                     }
                 } catch (error) {
                     console.error('Excel解析错误:', error);
-                    alert('Excel文件解析失败，请检查文件格式');
+                    alert('Excel文件解析失败，请检查文件格式是否正确');
                 }
+            };
+            
+            reader.onerror = function() {
+                console.error('文件读取失败');
+                alert('文件读取失败，请重试');
             };
             
             reader.readAsArrayBuffer(file);
@@ -1424,10 +1661,54 @@
             return added;
         }
 
+        // 数据持久化：保存到localStorage
+        function saveDataToStorage() {
+            try {
+                localStorage.setItem('officeChairData', JSON.stringify(officeChairData));
+                console.log('数据已保存到localStorage');
+            } catch (error) {
+                console.error('保存数据失败:', error);
+            }
+        }
+
+        // 数据持久化：从localStorage加载
+        function loadDataFromStorage() {
+            try {
+                const savedData = localStorage.getItem('officeChairData');
+                if (savedData) {
+                    const parsedData = JSON.parse(savedData);
+                    // 合并保存的数据到当前数据结构中
+                    for (const categoryKey in parsedData) {
+                        if (officeChairData[categoryKey] && parsedData[categoryKey].items) {
+                            officeChairData[categoryKey].items = parsedData[categoryKey].items;
+                        }
+                    }
+                    console.log('已从localStorage加载数据');
+                    return true;
+                }
+            } catch (error) {
+                console.error('加载数据失败:', error);
+            }
+            return false;
+        }
+
         // 页面加载完成后的初始化
         document.addEventListener('DOMContentLoaded', function() {
-            // 可以在这里添加其他初始化逻辑
+            // 从localStorage加载数据
+            loadDataFromStorage();
+            
             console.log('办公椅配件页面已加载');
+            
+            // 测试编辑配件本地图片上传字段是否存在
+            setTimeout(() => {
+                const testElement = document.getElementById('editItemImageFile');
+                console.log('编辑配件本地图片上传字段测试:', testElement);
+                if (testElement) {
+                    console.log('✅ 编辑配件本地图片上传字段存在');
+                } else {
+                    console.log('❌ 编辑配件本地图片上传字段不存在');
+                }
+            }, 1000);
         });
     </script>
 </body>
