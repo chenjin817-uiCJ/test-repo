@@ -558,7 +558,7 @@
         <div class="modal" id="fabricUploadModal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>上传面料数据</h2>
+                    <h2>上传色板数据</h2>
                     <button class="close-btn" onclick="closeFabricUploadModal()">
                         <i class="fas fa-times"></i>
                     </button>
@@ -567,13 +567,14 @@
                     <div class="upload-area" id="fabricUploadArea">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <p>拖拽 Excel 与图片 文件到此处或点击选择文件</p>
+                        <p style="color: #ff6b6b; font-size: 14px; margin: 5px 0;">图片大小不能超过3MB</p>
                         <input type="file" id="fabricFileInput" accept=".xlsx,.xls,image/*" multiple style="display: none;">
                         <button class="btn btn-secondary" onclick="event.stopPropagation();document.getElementById('fabricFileInput').click()">
                             选择文件（可多选）
                         </button>
                     </div>
                     <div class="upload-instructions">
-                        <h3>面料Excel与图片上传说明：</h3>
+                        <h3>色板Excel与图片上传说明：</h3>
                         <ul>
                             <li>第一列：色板型号</li>
                             <li>第二列：面料描述</li>

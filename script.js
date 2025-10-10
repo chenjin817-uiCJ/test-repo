@@ -4072,8 +4072,8 @@ function buildFabricUploadedImageMap(imageFiles) {
         
         console.log(`处理图片文件: ${filename}, 大小: ${(img.size/1024).toFixed(1)}KB`);
         
-        // 检查文件大小（限制为2MB，超过则压缩）
-        if (img.size > 2 * 1024 * 1024) {
+        // 检查文件大小（限制为3MB，超过则压缩）
+        if (img.size > 3 * 1024 * 1024) {
             console.warn(`图片 ${filename} 太大 (${(img.size/1024/1024).toFixed(1)}MB)，将跳过`);
             resolve();
             return;

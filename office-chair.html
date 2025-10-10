@@ -758,6 +758,7 @@
                 <div class="upload-area" id="uploadArea">
                     <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: #667eea; margin-bottom: 20px;"></i>
                     <p>拖拽 Excel 与图片文件到此处或点击选择文件</p>
+                    <p style="color: #ff6b6b; font-size: 14px; margin: 5px 0;">图片大小不能超过3MB</p>
                     <input type="file" id="fileInput" accept=".xlsx,.xls,image/*" multiple style="display: none;">
                     <button type="button" class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
                         选择文件 (可多选)
@@ -1585,8 +1586,8 @@
             const noExt = lower.replace(/\.[a-z0-9]+$/, '');
             const compact = lower.replace(/\s+/g, '');
             
-            // 检查文件大小（限制为2MB，超过则压缩）
-            if (img.size > 2 * 1024 * 1024) {
+            // 检查文件大小（限制为3MB，超过则压缩）
+            if (img.size > 3 * 1024 * 1024) {
                 console.warn(`图片 ${filename} 太大 (${(img.size/1024/1024).toFixed(1)}MB)，将跳过`);
                 resolve();
                 return;
