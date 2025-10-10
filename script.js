@@ -2382,11 +2382,102 @@ function setOptionsCategoryFilter(cat, event) {
 function showAddOptionModal() {
     document.getElementById('addOptionModal').classList.add('show');
     document.getElementById('addOptionForm').reset();
+    
+    // 调试：检查select元素状态
+    const selectElement = document.getElementById('addOptionCategory');
+    if (selectElement) {
+        console.log('新增选项模态框已打开，select元素存在');
+        console.log('select元素是否禁用:', selectElement.disabled);
+        console.log('select元素是否只读:', selectElement.readOnly);
+        console.log('select元素样式:', window.getComputedStyle(selectElement).pointerEvents);
+        
+        // 强制设置select元素的样式，确保可以点击
+        selectElement.style.pointerEvents = 'auto';
+        selectElement.style.position = 'relative';
+        selectElement.style.zIndex = '1';
+        
+        // 确保整个模态框内容区域可以交互
+        const modalContent = document.querySelector('#addOptionModal .modal-content');
+        if (modalContent) {
+            modalContent.style.pointerEvents = 'auto';
+            modalContent.style.position = 'relative';
+            modalContent.style.zIndex = '1001';
+        }
+        
+        // 确保模态框本身可以交互
+        const modal = document.getElementById('addOptionModal');
+        if (modal) {
+            modal.style.pointerEvents = 'auto';
+        }
+        
+        // 强制设置所有表单元素的样式
+        const formElements = document.querySelectorAll('#addOptionModal input, #addOptionModal select, #addOptionModal button');
+        formElements.forEach(element => {
+            element.style.pointerEvents = 'auto';
+            element.style.position = 'relative';
+            element.style.zIndex = '1002';
+        });
+        
+        // 添加点击事件监听器用于调试
+        selectElement.addEventListener('click', function(e) {
+            console.log('select元素被点击了');
+        });
+        
+        selectElement.addEventListener('focus', function(e) {
+            console.log('select元素获得焦点');
+        });
+        
+        selectElement.addEventListener('mousedown', function(e) {
+            console.log('select元素鼠标按下');
+        });
+        
+        // 为其他元素添加调试信息
+        const nameInput = document.getElementById('addOptionName');
+        const cancelBtn = document.querySelector('#addOptionModal .btn-secondary');
+        const submitBtn = document.querySelector('#addOptionModal .btn-primary');
+        const closeBtn = document.querySelector('#addOptionModal .close-btn');
+        
+        if (nameInput) {
+            nameInput.addEventListener('click', function(e) {
+                console.log('选项名称输入框被点击了');
+            });
+            nameInput.addEventListener('focus', function(e) {
+                console.log('选项名称输入框获得焦点');
+            });
+        }
+        
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function(e) {
+                console.log('取消按钮被点击了');
+            });
+        }
+        
+        if (submitBtn) {
+            submitBtn.addEventListener('click', function(e) {
+                console.log('新增选项按钮被点击了');
+            });
+        }
+        
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function(e) {
+                console.log('关闭按钮被点击了');
+            });
+        }
+    } else {
+        console.error('找不到addOptionCategory select元素');
+    }
 }
 
 // 关闭新增选项模态框
 function closeAddOptionModal() {
-    document.getElementById('addOptionModal').classList.remove('show');
+    console.log('开始关闭新增选项模态框');
+    const modal = document.getElementById('addOptionModal');
+    if (modal) {
+        modal.classList.remove('show');
+        console.log('新增选项模态框已成功关闭');
+    } else {
+        console.error('找不到新增选项模态框元素');
+    }
 }
 
 // 显示编辑选项模态框
@@ -2477,7 +2568,17 @@ function handleAddOption(e) {
     materialOptions.unshift(newOption);
     saveOptions();
     applyOptionsFilters();
+    
+    // 调试信息
+    console.log('准备关闭新增选项模态框');
+    
+    // 重置表单
+    document.getElementById('addOptionForm').reset();
+    
+    // 关闭模态框
     closeAddOptionModal();
+    console.log('新增选项模态框已关闭');
+    
     alert('新增成功');
 }
 
@@ -2583,19 +2684,35 @@ function buildUploadedImageMap(imageFiles) {
 
 // 保存到本地存储
 function saveMaterials() {
-    try { localStorage.setItem('materials_v1', JSON.stringify(materials)); } catch (_) {}
+    try { 
+        // 清理失效的blob URL
+        const cleanedMaterials = materials.map(material => {
+            if (material.imageUrl && material.imageUrl.startsWith('blob:')) {
+                console.log('清理材质数据中的失效blob URL');
+                return { ...material, imageUrl: '' };
+            }
+            return material;
+        });
+        localStorage.setItem('materials_v1', JSON.stringify(cleanedMaterials)); 
+    } catch (_) {}
 }
 
 // 保存面料到本地存储
 function saveFabrics() {
     try { 
-        // 只清理过大的base64图片数据，保留小图片
+        // 清理过大的base64图片数据和失效的blob URL
         const cleanedFabrics = fabrics.map(fabric => {
-            if (fabric.imageUrl && fabric.imageUrl.startsWith('data:image/')) {
-                // 如果base64数据过大（超过200KB），则清理
-                if (fabric.imageUrl.length > 200 * 1024) {
-                    console.log('清理过大的base64图片数据以节省空间');
+            if (fabric.imageUrl) {
+                if (fabric.imageUrl.startsWith('blob:')) {
+                    // blob URL在页面刷新后会失效，需要清理
+                    console.log('清理失效的blob URL');
                     return { ...fabric, imageUrl: '' };
+                } else if (fabric.imageUrl.startsWith('data:image/')) {
+                    // 如果base64数据过大（超过200KB），则清理
+                    if (fabric.imageUrl.length > 200 * 1024) {
+                        console.log('清理过大的base64图片数据以节省空间');
+                        return { ...fabric, imageUrl: '' };
+                    }
                 }
             }
             return fabric;
