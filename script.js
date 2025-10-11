@@ -2814,6 +2814,16 @@ function renderFabrics() {
     const gallery = document.getElementById('fabricsGallery');
     const noResults = document.getElementById('fabricsNoResults');
     
+    // 检查元素是否存在
+    if (!gallery) {
+        console.warn('fabricsGallery元素不存在，跳过渲染');
+        return;
+    }
+    if (!noResults) {
+        console.warn('fabricsNoResults元素不存在，跳过渲染');
+        return;
+    }
+    
     const list = filteredFabrics;
 
     if (list.length === 0) {
@@ -4258,6 +4268,16 @@ document.addEventListener('keydown', function(e) {
 function renderHighlights() {
     const gallery = document.getElementById('highlightsGallery');
     const noResults = document.getElementById('highlightsNoResults');
+    
+    // 检查元素是否存在
+    if (!gallery) {
+        console.warn('highlightsGallery元素不存在，跳过渲染');
+        return;
+    }
+    if (!noResults) {
+        console.warn('highlightsNoResults元素不存在，跳过渲染');
+        return;
+    }
     
     const list = filteredHighlights;
 
