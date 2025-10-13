@@ -533,6 +533,11 @@ function initializeApp() {
     }
     filteredFabrics = [...fabrics];
     filteredColorboards = [...colorboards];
+    
+    // 如果当前页面是色板管理，初始化列宽调整功能
+    if (currentPage === 'colorboard') {
+        setTimeout(initTableResize, 200);
+    }
 
     // 面料数据迁移 - 添加MOQ字段和色板型号字段
     let fabricDataUpdated = false;
@@ -3083,7 +3088,7 @@ function switchPage(page) {
         renderFabrics();
     } else if (page === 'colorboard') {
         colorboardActions.style.display = 'flex';
-        renderColorboard();
+        renderColorboardWithResize();
     } else if (page === 'highlights') {
         highlightsActions.style.display = 'flex';
         renderHighlights();
@@ -3182,7 +3187,7 @@ function renderColorboard() {
                     <span>${colorboard.classification || '-'}</span>
                 </div>
             </td>
-            <td>
+            <td class="resizable">
                 <div class="notion-table-cell">
                     <span>${colorboard.composition || '-'}</span>
                 </div>
@@ -7753,4 +7758,86 @@ if (typeof window.switchPage !== 'function') {
         try { const oc = document.getElementById('officechairPartsPage'); if (oc) oc.style.display = page === 'officechairParts' ? 'block' : 'none'; } catch (_) {}
         console.warn('[fallback] switchPage executed for:', page);
     };
+}
+
+// 表格列宽调整功能
+function initTableResize() {
+    const table = document.getElementById('colorboardTable');
+    if (!table) return;
+
+    const resizableColumns = table.querySelectorAll('th.resizable');
+    
+    resizableColumns.forEach(header => {
+        const handle = header.querySelector('.resize-handle');
+        if (!handle) return;
+
+        let isResizing = false;
+        let startX = 0;
+        let startWidth = 0;
+        let columnIndex = 0;
+
+        // 获取列索引
+        const headers = table.querySelectorAll('th');
+        columnIndex = Array.from(headers).indexOf(header);
+
+        handle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = header.offsetWidth;
+            
+            // 添加高亮效果
+            header.classList.add('resizing');
+            
+            // 阻止默认行为
+            e.preventDefault();
+            e.stopPropagation();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const diffX = e.clientX - startX;
+            const newWidth = Math.max(80, Math.min(300, startWidth + diffX));
+            
+            // 更新列宽
+            header.style.width = newWidth + 'px';
+            
+            // 同步更新所有行的对应列
+            const rows = table.querySelectorAll('tr');
+            rows.forEach(row => {
+                const cell = row.children[columnIndex];
+                if (cell) {
+                    cell.style.width = newWidth + 'px';
+                }
+            });
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                header.classList.remove('resizing');
+            }
+        });
+
+        // 双击重置列宽
+        handle.addEventListener('dblclick', () => {
+            const resetWidth = 120; // 默认宽度
+            header.style.width = resetWidth + 'px';
+            
+            // 同步更新所有行的对应列
+            const rows = table.querySelectorAll('tr');
+            rows.forEach(row => {
+                const cell = row.children[columnIndex];
+                if (cell) {
+                    cell.style.width = resetWidth + 'px';
+                }
+            });
+        });
+    });
+}
+
+// 在色板页面渲染时初始化列宽调整功能
+function renderColorboardWithResize() {
+    renderColorboard();
+    setTimeout(initTableResize, 100);
 }

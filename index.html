@@ -91,6 +91,54 @@
         .checkbox-label:hover {
             color: #007bff;
         }
+
+        /* 表格列宽调整样式 */
+        .notion-table {
+            table-layout: fixed; /* 固定表格布局以支持列宽调整 */
+        }
+
+        .notion-table th,
+        .notion-table td {
+            position: relative;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* 可调整宽度的列 */
+        .notion-table th.resizable,
+        .notion-table td.resizable {
+            min-width: 80px;
+            max-width: 300px;
+            resize: horizontal;
+            overflow: visible;
+        }
+
+        /* 调整手柄 */
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            background: transparent;
+            cursor: col-resize;
+            z-index: 10;
+        }
+
+        .resize-handle:hover {
+            background: #007bff;
+        }
+
+        .resize-handle:active {
+            background: #0056b3;
+        }
+
+        /* 调整时的高亮效果 */
+        .notion-table th.resizing,
+        .notion-table td.resizing {
+            background-color: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -314,11 +362,12 @@
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="composition">
+                                        <th class="notion-table-header resizable" data-sort="composition">
                                             <div class="notion-table-header-content">
                                                 <span>成分</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
                                         <th class="notion-table-header" data-sort="weight">
                                             <div class="notion-table-header-content">

@@ -302,13 +302,14 @@ body {
 }
 
 .modal-body {
-    padding: 2rem;
+    padding: 1.5rem 2rem 1rem 2rem; /* 减少底部padding */
 }
 .modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 0.75rem;
-    margin-top: 1rem;
+    margin-top: 0.5rem; /* 减少顶部间距 */
+    padding: 1rem 2rem 1.5rem 2rem; /* 添加底部padding */
 }
 .material-image {
     width: 100%;
@@ -752,9 +753,13 @@ body {
     }
     
     .modal-body {
-        padding: 1rem;
+        padding: 1rem 1rem 0.5rem 1rem; /* 减少底部padding */
     }
-    .modal-footer { flex-direction: column-reverse; }
+    .modal-footer { 
+        flex-direction: column-reverse; 
+        margin-top: 0.25rem; /* 减少顶部间距 */
+        padding: 0.5rem 1rem 1rem 1rem; /* 调整padding */
+    }
     
     .search-box input {
         padding: 0.75rem 0.75rem 0.75rem 2.5rem;
