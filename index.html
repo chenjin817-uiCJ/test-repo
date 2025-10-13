@@ -6,6 +6,66 @@
     <title>家具卖点字典</title>
     <link rel="stylesheet" href="styles.css?v=2">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* 色板表格冻结列样式 */
+        .notion-table-wrapper {
+            overflow-x: auto;
+            position: relative; /* 为sticky定位提供上下文 */
+        }
+
+        /* 冻结列的通用样式 */
+        .notion-table th.sticky-col,
+        .notion-table td.sticky-col {
+            position: sticky !important;
+            background-color: #fff !important; /* 确保背景不透明 */
+            border-right: 1px solid #e0e0e0; /* 视觉分隔线 */
+            box-sizing: border-box;
+            white-space: nowrap; /* 防止文本换行 */
+        }
+
+        /* 第一冻结列：图片 */
+        .notion-table th.sticky-col-1,
+        .notion-table td.sticky-col-1 {
+            left: 0 !important;
+            z-index: 11 !important; /* 最高层级 */
+            width: 80px !important; /* 固定宽度 */
+            min-width: 80px !important;
+            max-width: 80px !important;
+            padding: 5px;
+        }
+        
+        .notion-table td.sticky-col-1 .notion-table-image {
+            height: 50px; /* 固定高度 */
+            width: 100%;
+            object-fit: contain;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .notion-table td.sticky-col-1 img {
+            height: 50px;
+            width: 100%;
+            object-fit: contain;
+        }
+
+        /* 第二冻结列：色板型号 */
+        .notion-table th.sticky-col-2,
+        .notion-table td.sticky-col-2 {
+            left: 80px !important; /* 位于第一列之后 */
+            z-index: 10 !important; /* 比第一列稍低 */
+            width: 120px !important; /* 固定宽度 */
+            min-width: 120px !important;
+            max-width: 120px !important;
+        }
+
+        /* 确保表头有正确的背景色和层级 */
+        .notion-table thead th.sticky-col {
+            background-color: #f8f9fa !important; /* 表头背景色 */
+            z-index: 12 !important; /* 表头层级最高 */
+        }
+    </style>
 </head>
 <body>
     <div class="app">
@@ -187,12 +247,12 @@
                             <table class="notion-table" id="colorboardTable">
                                 <thead>
                                     <tr>
-                                        <th class="notion-table-header" data-sort="image">
+                                        <th class="notion-table-header sticky-col sticky-col-1" data-sort="image">
                                             <div class="notion-table-header-content">
                                                 <span>图片</span>
                                             </div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="colorCode">
+                                        <th class="notion-table-header sticky-col sticky-col-2" data-sort="colorCode">
                                             <div class="notion-table-header-content">
                                                 <span>色板型号</span>
                                                 <i class="fas fa-sort sort-icon"></i>
@@ -243,6 +303,12 @@
                                         <th class="notion-table-header" data-sort="width">
                                             <div class="notion-table-header-content">
                                                 <span>门幅</span>
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            </div>
+                                        </th>
+                                        <th class="notion-table-header" data-sort="remarks">
+                                            <div class="notion-table-header-content">
+                                                <span>备注</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
                                         </th>
@@ -558,7 +624,7 @@
         <div class="modal" id="fabricUploadModal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>上传色板数据</h2>
+                    <h2>上传面料数据</h2>
                     <button class="close-btn" onclick="closeFabricUploadModal()">
                         <i class="fas fa-times"></i>
                     </button>
@@ -574,21 +640,13 @@
                         </button>
                     </div>
                     <div class="upload-instructions">
-                        <h3>色板Excel与图片上传说明：</h3>
+                        <h3>面料Excel与图片上传说明：</h3>
                         <ul>
-                            <li>第一列：色板型号</li>
-                            <li>第二列：面料描述</li>
-                            <li>第三列：面料特性（用逗号分隔）</li>
-                            <li>第四列：图片文件名 或 图片URL（可选）</li>
-                            <li>第五列：平台分类（amazon、website、wayfair）</li>
-                            <li>第六列：价格（数字，可选）</li>
-                            <li>第七列：MOQ（可选）</li>
-                            <li>第八列：币种（CNY或USD，可选）</li>
-                            <li>第九列：面料厂家（可选）</li>
-                            <li>第十列：面料归类（可选）</li>
-                            <li>第十一列：面料成分（可选）</li>
-                            <li>第十二列：面料克重（可选）</li>
-                            <li>第十三列：面料门幅（可选）</li>
+                            <li>第一列：色板型号（必填）</li>
+                            <li>第二列：面料型号（必填）</li>
+                            <li>第三列：面料颜色（必填）</li>
+                            <li>第四列：图片文件名 或 图片URL（必填）</li>
+                            <li>注意：面料上传只需要这几列数据，其他列将被忽略</li>
                             <li>如使用本地图片，请与Excel一同选择相应图片文件；第四列填写文件名（如 <code>fabric1.jpg</code>），系统会自动匹配。</li>
                         </ul>
                     </div>

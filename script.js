@@ -15,8 +15,12 @@ let uploadedFabricImageMap = {}; // filename(lowercased) -> dataURL (base64) or 
 let pendingFabricExcelFile = null; // remember excel if images come first
 
 // 色板管理相关变量
+let colorboards = []; // 独立的色板数据数组
+let filteredColorboards = []; // 过滤后的色板数据
 let colorboardCategoryFilter = 'all'; // all | amazon | website | wayfair
 let colorboardSearchQuery = ''; // 色板搜索关键词
+let uploadedColorboardImageMap = {}; // filename(lowercased) -> dataURL (base64) or URL
+let pendingColorboardExcelFile = null; // remember excel if images come first
 
 // 选项管理相关变量
 let materialOptions = [];
@@ -483,7 +487,52 @@ function initializeApp() {
         fabrics = [...sampleFabrics];
         console.log('面料数据加载失败，使用默认数据，数据条数:', fabrics.length);
     }
+
+    // 初始化色板数据
+    try {
+        const storedColorboards = localStorage.getItem('colorboards_v1');
+        if (storedColorboards) {
+            const parsed = JSON.parse(storedColorboards);
+            if (Array.isArray(parsed)) {
+                // 验证和清理数据
+                colorboards = parsed.filter(item => {
+                    // 检查基本结构
+                    if (!item || typeof item !== 'object') return false;
+                    
+                    // 检查是否有有效的标识字段
+                    const hasValidId = item.id && item.id !== '';
+                    const hasValidColorCode = item.colorCode && item.colorCode !== '';
+                    
+                    return hasValidId && hasValidColorCode;
+                });
+                
+                // 保留小图片的base64数据，清理过大的base64数据
+                colorboards = colorboards.map(item => {
+                    if (item.imageUrl && item.imageUrl.startsWith('data:image/')) {
+                        // 如果base64数据过大（超过200KB），则清理
+                        if (item.imageUrl.length > 200 * 1024) {
+                            console.log('清理过大的base64图片数据');
+                            return { ...item, imageUrl: '' };
+                        }
+                    }
+                    return item;
+                });
+                
+                console.log('从localStorage加载色板数据，数据条数:', colorboards.length);
+            } else {
+                colorboards = [];
+                console.log('色板数据格式错误，使用空数据');
+            }
+        } else {
+            colorboards = [];
+            console.log('使用空色板数据');
+        }
+    } catch (e) {
+        colorboards = [];
+        console.log('色板数据加载失败，使用空数据');
+    }
     filteredFabrics = [...fabrics];
+    filteredColorboards = [...colorboards];
 
     // 面料数据迁移 - 添加MOQ字段和色板型号字段
     let fabricDataUpdated = false;
@@ -1903,6 +1952,7 @@ function handleSearch(e) {
 // 处理面料搜索
 function handleFabricSearch(e) {
     fabricSearchQuery = e.target.value.toLowerCase().trim();
+    console.log('面料搜索查询:', fabricSearchQuery);
     applyFabricFilters();
 }
 
@@ -1974,11 +2024,17 @@ function closeAddColorboardModal() {
 
 // 显示色板上传模态框（临时实现，复用面料上传功能）
 function showColorboardUploadModal() {
-    // 复用面料上传模态框：色板管理依赖面料数据
+    // 复用面料上传模态框，但使用色板专用的处理逻辑
     const modal = document.getElementById('fabricUploadModal');
     const modalContent = modal ? modal.querySelector('.modal-content') : null;
+    const modalHeader = modal ? modal.querySelector('.modal-header h2') : null;
     
     if (modal) {
+        // 修改模态框标题为色板上传
+        if (modalHeader) {
+            modalHeader.textContent = '上传色板数据';
+        }
+        
         modal.classList.add('show');
         modal.style.display = 'flex';
         modal.style.pointerEvents = 'auto';
@@ -1992,7 +2048,174 @@ function showColorboardUploadModal() {
         
         // 阻止背景页面滚动
         preventBodyScroll();
+        
+        // 设置色板专用的文件处理
+        setupColorboardFileHandlers();
     }
+}
+
+// 设置色板专用的文件处理器
+function setupColorboardFileHandlers() {
+    const fabricFileInput = document.getElementById('fabricFileInput');
+    const fabricUploadArea = document.getElementById('fabricUploadArea');
+    
+    // 修改说明文字为色板格式
+    const modal = document.getElementById('fabricUploadModal');
+    const uploadInstructions = modal ? modal.querySelector('.upload-instructions h3') : null;
+    const uploadInstructionsList = modal ? modal.querySelector('.upload-instructions ul') : null;
+    if (uploadInstructions && uploadInstructionsList) {
+        uploadInstructions.textContent = '色板Excel与图片上传说明：';
+        uploadInstructionsList.innerHTML = `
+            <li>第一列：色板型号</li>
+            <li>第二列：面料描述</li>
+            <li>第三列：面料特性（用逗号分隔）</li>
+            <li>第四列：图片文件名 或 图片URL（可选）</li>
+            <li>第五列：平台分类（amazon、website、wayfair）</li>
+            <li>第六列：价格（数字，可选）</li>
+            <li>第七列：MOQ（可选）</li>
+            <li>第八列：币种（CNY或USD，可选）</li>
+            <li>第九列：面料厂家（可选）</li>
+            <li>第十列：面料归类（可选）</li>
+            <li>第十一列：面料成分（可选）</li>
+            <li>第十二列：面料克重（可选）</li>
+            <li>第十三列：面料门幅（可选）</li>
+            <li>第十四列：备注（可选）</li>
+            <li>如使用本地图片，请与Excel一同选择相应图片文件；第四列填写文件名（如 <code>fabric1.jpg</code>），系统会自动匹配。</li>
+        `;
+    }
+    
+    // 清除之前的事件监听器
+    const newFabricFileInput = fabricFileInput.cloneNode(true);
+    fabricFileInput.parentNode.replaceChild(newFabricFileInput, fabricFileInput);
+    
+    // 添加色板专用的文件上传处理
+    newFabricFileInput.addEventListener('change', handleColorboardFileUpload);
+    
+    // 色板拖拽上传
+    if (fabricUploadArea) {
+        fabricUploadArea.removeEventListener('dragover', handleFabricDragOver);
+        fabricUploadArea.removeEventListener('dragleave', handleFabricDragLeave);
+        fabricUploadArea.removeEventListener('drop', handleFabricDrop);
+        fabricUploadArea.removeEventListener('click', fabricUploadArea.clickHandler);
+        
+        fabricUploadArea.addEventListener('dragover', handleColorboardDragOver);
+        fabricUploadArea.addEventListener('dragleave', handleColorboardDragLeave);
+        fabricUploadArea.addEventListener('drop', handleColorboardDrop);
+        fabricUploadArea.addEventListener('click', (e) => {
+            if (e.target && e.target.closest('button')) return;
+            newFabricFileInput.click();
+        });
+    }
+}
+
+// 处理色板文件上传
+async function handleColorboardFileUpload(e) {
+    const input = e.target;
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
+
+    const { excelFile, imageFiles } = splitExcelAndImages(files);
+    if (imageFiles.length) {
+        await buildColorboardUploadedImageMap(imageFiles);
+    }
+    if (excelFile) {
+        pendingColorboardExcelFile = excelFile;
+        processColorboardExcelFile(pendingColorboardExcelFile);
+    } else if (imageFiles.length) {
+        alert(`已添加 ${imageFiles.length} 张图片，请再选择Excel文件。`);
+    }
+
+    try { input.value = ''; } catch (_) {}
+}
+
+// 处理色板拖拽悬停
+function handleColorboardDragOver(e) {
+    e.preventDefault();
+    e.currentTarget.classList.add('dragover');
+}
+
+// 处理色板拖拽离开
+function handleColorboardDragLeave(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('dragover');
+}
+
+// 处理色板拖拽放置
+async function handleColorboardDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('dragover');
+    
+    const files = Array.from(e.dataTransfer.files || []);
+    if (!files.length) return;
+    const { excelFile, imageFiles } = splitExcelAndImages(files);
+    if (imageFiles.length) {
+        await buildColorboardUploadedImageMap(imageFiles);
+    }
+    if (excelFile) {
+        pendingColorboardExcelFile = excelFile;
+        processColorboardExcelFile(pendingColorboardExcelFile);
+    } else if (imageFiles.length) {
+        alert('已拖入图片，请再拖入或选择Excel文件。');
+    }
+}
+
+// 删除色板
+function deleteColorboard(colorboardId) {
+    if (confirm('确定要删除这个色板吗？')) {
+        colorboards = colorboards.filter(c => c.id !== colorboardId);
+        saveColorboards();
+        applyColorboardFilters();
+        renderColorboard();
+        alert('色板删除成功');
+    }
+}
+
+// 显示编辑色板模态框
+function showEditColorboardModal(colorboardId) {
+    const colorboard = colorboards.find(c => c.id === colorboardId);
+    if (!colorboard) {
+        alert('色板不存在');
+        return;
+    }
+    
+    const modal = document.getElementById('editColorboardFabricModal');
+    if (!modal) {
+        alert('编辑模态框不存在');
+        return;
+    }
+    
+    // 填充表单数据
+    document.getElementById('editColorboardFabricId').value = colorboard.id;
+    document.getElementById('editColorboardFabricColorCode').value = colorboard.colorCode || '';
+    document.getElementById('editColorboardFabricDescription').value = colorboard.description || '';
+    document.getElementById('editColorboardFabricCategory').value = colorboard.category || '';
+    document.getElementById('editColorboardFabricPrice').value = colorboard.price || '';
+    document.getElementById('editColorboardFabricCurrency').value = colorboard.currency || 'CNY';
+    document.getElementById('editColorboardFabricMoq').value = colorboard.moq || '';
+    document.getElementById('editColorboardFabricManufacturer').value = colorboard.manufacturer || '';
+    document.getElementById('editColorboardFabricClassification').value = colorboard.classification || '';
+    document.getElementById('editColorboardFabricComposition').value = colorboard.composition || '';
+    document.getElementById('editColorboardFabricWeight').value = colorboard.weight || '';
+    document.getElementById('editColorboardFabricWidth').value = colorboard.width || '';
+    document.getElementById('editColorboardFabricImageUrl').value = colorboard.imageUrl || '';
+    
+    // 清除文件输入
+    document.getElementById('editColorboardFabricImageFile').value = '';
+    
+    modal.classList.add('show');
+    modal.style.display = 'flex';
+    modal.style.pointerEvents = 'auto';
+    
+    // 确保模态框内容可以滚动
+    const modalContent = modal.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.style.overflowY = 'auto';
+        modalContent.style.maxHeight = '80vh';
+        modalContent.style.height = 'auto';
+    }
+    
+    // 阻止背景页面滚动
+    preventBodyScroll();
 }
 
 // 应用面料过滤（分类 + 搜索）
@@ -2006,11 +2229,25 @@ function applyFabricFilters() {
     
     // 应用搜索过滤
     if (fabricSearchQuery) {
-        filtered = filtered.filter(fabric => 
-            (fabric.colorCode && fabric.colorCode.toLowerCase().includes(fabricSearchQuery)) ||
-            fabric.code.toLowerCase().includes(fabricSearchQuery) ||
-            (fabric.color && fabric.color.toLowerCase().includes(fabricSearchQuery))
-        );
+        console.log('应用面料搜索过滤，查询:', fabricSearchQuery, '原始数据条数:', filtered.length);
+        filtered = filtered.filter(fabric => {
+            const colorCode = fabric.colorCode ? fabric.colorCode.toString().toLowerCase() : '';
+            const code = fabric.code ? fabric.code.toString().toLowerCase() : '';
+            const color = fabric.color ? fabric.color.toString().toLowerCase() : '';
+            const description = fabric.description ? fabric.description.toString().toLowerCase() : '';
+            
+            const matches = colorCode.includes(fabricSearchQuery) ||
+                           code.includes(fabricSearchQuery) ||
+                           color.includes(fabricSearchQuery) ||
+                           description.includes(fabricSearchQuery);
+            
+            if (matches) {
+                console.log('匹配的面料:', fabric);
+            }
+            
+            return matches;
+        });
+        console.log('搜索后数据条数:', filtered.length);
     }
     
     filteredFabrics = filtered;
@@ -2740,6 +2977,46 @@ function saveFabrics() {
     populateColorCodeSelects();
 }
 
+function saveColorboards() {
+    try { 
+        // 清理过大的base64图片数据和失效的blob URL
+        const cleanedColorboards = colorboards.map(colorboard => {
+            if (colorboard.imageUrl) {
+                if (colorboard.imageUrl.startsWith('blob:')) {
+                    // blob URL在页面刷新后会失效，需要清理
+                    console.log('清理失效的blob URL');
+                    return { ...colorboard, imageUrl: '' };
+                } else if (colorboard.imageUrl.startsWith('data:image/')) {
+                    // 如果base64数据过大（超过200KB），则清理
+                    if (colorboard.imageUrl.length > 200 * 1024) {
+                        console.log('清理过大的base64图片数据以节省空间');
+                        return { ...colorboard, imageUrl: '' };
+                    }
+                }
+            }
+            return colorboard;
+        });
+        
+        const dataToSave = JSON.stringify(cleanedColorboards);
+        const dataSize = (dataToSave.length / 1024).toFixed(2);
+        console.log(`准备保存色板数据，大小: ${dataSize}KB`);
+        
+        localStorage.setItem('colorboards_v1', dataToSave); 
+        console.log('色板数据已保存到localStorage，数据条数:', cleanedColorboards.length);
+        
+        // 更新内存中的数据
+        colorboards = cleanedColorboards;
+        
+    } catch (error) {
+        console.error('保存色板数据失败:', error);
+        if (error.name === 'QuotaExceededError') {
+            alert('存储空间不足！请尝试以下解决方案：\n1. 清除浏览器缓存\n2. 减少上传的图片数量\n3. 使用网络图片URL而不是本地图片文件');
+            // 尝试清理一些数据
+            clearOldImageData();
+        }
+    }
+}
+
 // 清理旧的图片数据以释放存储空间
 function clearOldImageData() {
     try {
@@ -2838,7 +3115,7 @@ function renderFabrics() {
         <div class="fabric-card" onclick="showFabricDetail(${fabric.id})">
             <div class="fabric-info">
                 <div class="fabric-color-code">${fabric.colorCode || '未设置'}</div>
-                <div class="fabric-code">${fabric.code}</div>
+                <div class="fabric-code">${fabric.code || '未设置'}</div>
                 <div class="fabric-color">${fabric.color || '未设置'}</div>
             </div>
         </div>
@@ -2850,76 +3127,81 @@ function renderColorboard() {
     const tableBody = document.getElementById('colorboardTableBody');
     const noResults = document.getElementById('colorboardNoResults');
     
-    // 获取过滤后的面料数据
-    const filteredFabrics = applyColorboardFilters();
+    // 获取过滤后的色板数据
+    const filteredColorboards = applyColorboardFilters();
     
-    if (filteredFabrics.length === 0) {
+    if (filteredColorboards.length === 0) {
         tableBody.innerHTML = '';
         noResults.style.display = 'block';
         return;
     }
     
     noResults.style.display = 'none';
-    tableBody.innerHTML = filteredFabrics.map(fabric => `
-        <tr data-fabric-id="${fabric.id}">
-            <td>
-                ${fabric.imageUrl ? `
-                    <img src="${fabric.imageUrl}" alt="${fabric.code}" class="notion-table-image" data-image-src="${fabric.imageUrl}" onerror="this.style.display='none'" />
+    tableBody.innerHTML = filteredColorboards.map(colorboard => `
+        <tr data-colorboard-id="${colorboard.id}">
+            <td class="sticky-col sticky-col-1">
+                ${colorboard.imageUrl ? `
+                    <img src="${colorboard.imageUrl}" alt="${colorboard.colorCode}" class="notion-table-image" data-image-src="${colorboard.imageUrl}" onerror="this.style.display='none'" />
                 ` : `
                     <div class="notion-table-image" style="background: #f1f3f4; display: flex; align-items: center; justify-content: center; color: #6c757d;">
                         <i class="fas fa-image"></i>
                     </div>
                 `}
             </td>
-            <td>
+            <td class="sticky-col sticky-col-2">
                 <div class="notion-table-cell">
-                    <span>${fabric.colorCode || '-'}</span>
+                    <span>${colorboard.colorCode || '-'}</span>
                 </div>
             </td>
             <td>
-                <div class="notion-table-platform ${fabric.category}">${getCategoryLabel(fabric.category)}</div>
+                <div class="notion-table-platform ${colorboard.category}">${getCategoryLabel(colorboard.category)}</div>
             </td>
             <td>
                 <div class="notion-table-cell">
-                    <span class="notion-table-price">${fabric.price ? `${fabric.price} ${fabric.currency === 'CNY' ? '¥' : '$'}` : '-'}</span>
-                </div>
-            </td>
-            <td>
-                <div class="notion-table-cell">
-                    <span>${fabric.moq || '-'}</span>
+                    <span class="notion-table-price">${colorboard.price ? `${colorboard.price} ${colorboard.currency === 'CNY' ? '¥' : '$'}` : '-'}</span>
                 </div>
             </td>
             <td>
                 <div class="notion-table-cell">
-                    <span>${fabric.manufacturer || '-'}</span>
+                    <span>${colorboard.moq || '-'}</span>
                 </div>
             </td>
             <td>
                 <div class="notion-table-cell">
-                    <span>${fabric.classification || '-'}</span>
+                    <span>${colorboard.manufacturer || '-'}</span>
                 </div>
             </td>
             <td>
                 <div class="notion-table-cell">
-                    <span>${fabric.composition || '-'}</span>
+                    <span>${colorboard.classification || '-'}</span>
                 </div>
             </td>
             <td>
                 <div class="notion-table-cell">
-                    <span>${fabric.weight || '-'}</span>
+                    <span>${colorboard.composition || '-'}</span>
                 </div>
             </td>
             <td>
                 <div class="notion-table-cell">
-                    <span>${fabric.width || '-'}</span>
+                    <span>${colorboard.weight || '-'}</span>
+                </div>
+            </td>
+            <td>
+                <div class="notion-table-cell">
+                    <span>${colorboard.width || '-'}</span>
+                </div>
+            </td>
+            <td>
+                <div class="notion-table-cell">
+                    <span>${colorboard.remarks || '-'}</span>
                 </div>
             </td>
             <td>
                 <div class="notion-table-actions">
-                    <button class="notion-table-action-btn edit" onclick="showEditColorboardFabricModal(${fabric.id})" title="编辑">
+                    <button class="notion-table-action-btn edit" onclick="showEditColorboardModal(${colorboard.id})" title="编辑">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="notion-table-action-btn delete" onclick="deleteFabric(${fabric.id})" title="删除">
+                    <button class="notion-table-action-btn delete" onclick="deleteColorboard(${colorboard.id})" title="删除">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -2967,22 +3249,23 @@ function getCategoryLabel(category) {
 
 // 色板管理过滤函数
 function applyColorboardFilters() {
-    let result = [...fabrics];
+    let result = [...colorboards];
     
     // 按分类过滤
     if (colorboardCategoryFilter !== 'all') {
-        result = result.filter(fabric => fabric.category === colorboardCategoryFilter);
+        result = result.filter(colorboard => colorboard.category === colorboardCategoryFilter);
     }
     
     // 按搜索关键词过滤
     if (colorboardSearchQuery.trim()) {
         const query = colorboardSearchQuery.trim().toLowerCase();
-        result = result.filter(fabric => {
+        result = result.filter(colorboard => {
             return (
-                (fabric.colorCode && fabric.colorCode.toLowerCase().includes(query)) ||
-                (fabric.description && fabric.description.toLowerCase().includes(query)) ||
-                (fabric.classification && fabric.classification.toLowerCase().includes(query)) ||
-                (fabric.composition && fabric.composition.toLowerCase().includes(query))
+                (colorboard.colorCode && colorboard.colorCode.toLowerCase().includes(query)) ||
+                (colorboard.description && colorboard.description.toLowerCase().includes(query)) ||
+                (colorboard.classification && colorboard.classification.toLowerCase().includes(query)) ||
+                (colorboard.composition && colorboard.composition.toLowerCase().includes(query)) ||
+                (colorboard.remarks && colorboard.remarks.toLowerCase().includes(query))
             );
         });
     }
@@ -2999,6 +3282,12 @@ function applyColorboardFilters() {
                 bVal = parseFloat(bVal) || 0;
             }
             
+            // 处理备注字段
+            if (colorboardSortField === 'remarks') {
+                aVal = aVal || '';
+                bVal = bVal || '';
+            }
+            
             // 处理字符串字段
             if (typeof aVal === 'string' && typeof bVal === 'string') {
                 aVal = aVal.toLowerCase();
@@ -3013,6 +3302,7 @@ function applyColorboardFilters() {
         });
     }
     
+    filteredColorboards = result;
     return result;
 }
 
@@ -3492,6 +3782,27 @@ function populateColorCodeSelects() {
 function showFabricUploadModal() {
     const modal = document.getElementById('fabricUploadModal');
     const modalContent = modal ? modal.querySelector('.modal-content') : null;
+    const modalHeader = modal ? modal.querySelector('.modal-header h2') : null;
+    
+    // 确保模态框标题为面料上传
+    if (modalHeader) {
+        modalHeader.textContent = '上传面料数据';
+    }
+    
+    // 恢复面料上传的说明文字
+    const uploadInstructions = modal ? modal.querySelector('.upload-instructions h3') : null;
+    const uploadInstructionsList = modal ? modal.querySelector('.upload-instructions ul') : null;
+    if (uploadInstructions && uploadInstructionsList) {
+        uploadInstructions.textContent = '面料Excel与图片上传说明：';
+        uploadInstructionsList.innerHTML = `
+            <li>第一列：色板型号（必填）</li>
+            <li>第二列：面料型号（必填）</li>
+            <li>第三列：面料颜色（必填）</li>
+            <li>第四列：图片文件名 或 图片URL（必填）</li>
+            <li>注意：面料上传只需要这几列数据，其他列将被忽略</li>
+            <li>如使用本地图片，请与Excel一同选择相应图片文件；第四列填写文件名（如 <code>fabric1.jpg</code>），系统会自动匹配。</li>
+        `;
+    }
     
     modal.classList.add('show');
     modal.style.display = 'flex';
@@ -3979,12 +4290,58 @@ function processFabricExcelFile(file) {
     reader.readAsArrayBuffer(file);
 }
 
-// 解析面料Excel数据
-function parseFabricExcelData(data) {
+// 处理色板Excel文件
+function processColorboardExcelFile(file) {
+    if (!file.name.match(/\.(xlsx|xls)$/)) {
+        alert('请选择Excel文件（.xlsx或.xls格式）');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            const { added, skippedDuplicates } = parseColorboardExcelData(jsonData);
+            if (added.length > 0) {
+                colorboards = [...colorboards, ...added];
+                console.log('色板数据上传成功，当前总数据条数:', colorboards.length);
+                console.log('上传的图片映射键:', Object.keys(uploadedColorboardImageMap));
+                console.log('新增的色板数据:', added);
+                saveColorboards();
+                applyColorboardFilters();
+                renderColorboard();
+                closeFabricUploadModal();
+                const dupMsg = skippedDuplicates.length ? `\n跳过重复：${skippedDuplicates.length} 个（${skippedDuplicates.join('、')}）` : '';
+                alert(`成功导入 ${added.length} 个色板数据！${Object.keys(uploadedColorboardImageMap).length ? '\n图片：已匹配本地文件（如有同名）' : ''}${dupMsg}`);
+                pendingColorboardExcelFile = null;
+            } else {
+                const { skippedDuplicates } = parseColorboardExcelData(jsonData);
+                if (skippedDuplicates && skippedDuplicates.length) {
+                    alert(`全部被识别为重复，未导入。重复：${skippedDuplicates.join('、')}`);
+                } else {
+                    alert('Excel文件中没有找到有效的色板数据');
+                }
+            }
+        } catch (error) {
+            console.error('Excel解析错误:', error);
+            alert('Excel文件解析失败，请检查文件格式');
+        }
+    };
+    
+    reader.readAsArrayBuffer(file);
+}
+
+// 解析色板Excel数据
+function parseColorboardExcelData(data) {
     const added = [];
     const skippedDuplicates = [];
-    // 改为使用colorCode作为唯一标识，而不是code
-    const existing = new Set(fabrics.map(f => (f.colorCode || '').toString().trim().toLowerCase()));
+    // 使用colorCode作为唯一标识
+    const existing = new Set(colorboards.map(c => (c.colorCode || '').toString().trim().toLowerCase()));
     const seenInFile = new Set();
 
     if (!data || data.length === 0) return { added, skippedDuplicates };
@@ -4006,8 +4363,8 @@ function parseFabricExcelData(data) {
         classification: findIdx(['归类', '分类名', 'classification']),
         composition: findIdx(['成分', 'composition']),
         weight: findIdx(['克重', 'weight', 'gsm']),
-        width: findIdx(['门幅', '宽度', 'width'])
-        // 移除code、name、color字段的索引
+        width: findIdx(['门幅', '宽度', 'width']),
+        remarks: findIdx(['备注', 'remark', 'note'])  // 第十四列：备注
     };
 
     // 遍历数据行
@@ -4035,6 +4392,108 @@ function parseFabricExcelData(data) {
         const compositionCell = get(idx.composition);
         const weightCell = get(idx.weight);
         const widthCell = get(idx.width);
+        const remarksCell = get(idx.remarks);
+
+        // 图片匹配逻辑
+        let resolvedImageUrl = '';
+        if (imageCell) {
+            const raw = imageCell.toString().trim();
+            console.log(`处理图片单元格: "${raw}"`);
+            
+            const base = decodeURI(raw).split(/[\\/]/).pop().trim();
+            const lowerName = base.toLowerCase();
+            const noExt = lowerName.replace(/\.[a-z0-9]+$/, '');
+            const compact = lowerName.replace(/\s+/g, '');
+            const candidates = [lowerName, noExt, compact];
+            
+            console.log(`图片匹配候选: [${candidates.join(', ')}]`);
+            console.log(`可用的图片映射键: [${Object.keys(uploadedColorboardImageMap).join(', ')}]`);
+            
+            for (const c of candidates) {
+                if (uploadedColorboardImageMap[c]) { 
+                    resolvedImageUrl = uploadedColorboardImageMap[c]; 
+                    console.log(`图片匹配成功: ${c} -> ${resolvedImageUrl.substring(0, 50)}...`);
+                    break; 
+                }
+            }
+            if (!resolvedImageUrl) {
+                if (/^https?:\/\//i.test(raw) || raw.startsWith('data:') || raw.startsWith('blob:')) {
+                    resolvedImageUrl = raw;
+                    console.log(`使用原始URL: ${resolvedImageUrl.substring(0, 50)}...`);
+                } else {
+                    console.log(`图片未匹配: "${raw}"`);
+                }
+            }
+        }
+
+        const colorboard = {
+            id: Date.now() + i,
+            colorCode: colorCode || '',
+            description: description || '暂无描述',
+            features: featuresStr ? featuresStr.split(/[,，]/).map(s => s.trim()).filter(s => s) : [],
+            imageUrl: resolvedImageUrl,
+            category: normalizeFabricCategory(categoryCell) || 'amazon',
+            price: priceCell ? parseFloat(priceCell) : null,
+            moq: moqCell || '',
+            currency: normalizeCurrency(currencyCell) || 'CNY',
+            manufacturer: manufacturerCell || '',
+            classification: classificationCell || '',
+            composition: compositionCell || '',
+            weight: weightCell || '',
+            width: widthCell || '',
+            remarks: remarksCell || ''  // 第十四列：备注
+        };
+
+        added.push(colorboard);
+        seenInFile.add(lower);
+    }
+
+    return { added, skippedDuplicates };
+}
+
+// 解析面料Excel数据 - 只处理三列：色板型号、面料型号、颜色
+function parseFabricExcelData(data) {
+    const added = [];
+    const skippedDuplicates = [];
+    // 使用code作为唯一标识（面料型号）
+    const existing = new Set(fabrics.map(f => (f.code || '').toString().trim().toLowerCase()));
+    const seenInFile = new Set();
+
+    if (!data || data.length === 0) return { added, skippedDuplicates };
+
+    // 头部行
+    const headers = (data[0] || []).map(h => (h || '').toString().trim());
+    const findIdx = (kwArr) => headers.findIndex(h => kwArr.some(k => h.toLowerCase().includes(k)));
+
+    const idx = {
+        colorCode: findIdx(['色板', 'color']),  // 第一列：色板型号
+        code: findIdx(['面料', 'fabric', '型号']),  // 第二列：面料型号
+        color: findIdx(['面料颜色', '颜色', 'colour']),  // 第三列：面料颜色
+        image: findIdx(['图片', 'image', 'url'])  // 第四列：图片文件名或URL
+    };
+
+    // 遍历数据行
+    for (let i = 1; i < data.length; i++) {
+        const row = data[i] || [];
+        const get = (index) => index >= 0 ? (row[index] !== undefined ? row[index].toString().trim() : '') : '';
+
+        const colorCode = get(idx.colorCode);
+        const code = get(idx.code);
+        const color = get(idx.color);
+        const imageCell = get(idx.image);
+        
+        // 检查必填字段
+        if (!colorCode || !code || !color || !imageCell) {
+            console.log(`跳过第${i+1}行：缺少必填字段 - 色板型号: ${colorCode}, 面料型号: ${code}, 面料颜色: ${color}, 图片: ${imageCell}`);
+            continue;
+        }
+        
+        // 使用面料型号作为唯一标识
+        const lower = code.toLowerCase();
+        if (existing.has(lower) || seenInFile.has(lower)) {
+            skippedDuplicates.push(code);
+            continue;
+        }
 
         // 图片匹配逻辑
         let resolvedImageUrl = '';
@@ -4068,24 +4527,24 @@ function parseFabricExcelData(data) {
             }
         }
 
+        // 创建面料对象，包含图片处理
         const fabric = {
             id: Date.now() + i,
-            code: null, // 面料型号设为null
-            name: null, // 面料名称设为null
-            color: null, // 面料颜色设为null
-            colorCode: colorCode || '',
-            description: description || '暂无描述',
-            features: featuresStr ? featuresStr.split(/[,，]/).map(s => s.trim()).filter(s => s) : [],
-            imageUrl: resolvedImageUrl,
-            category: normalizeFabricCategory(categoryCell) || 'amazon',
-            price: priceCell ? parseFloat(priceCell) : null,
-            moq: moqCell || '',
-            currency: normalizeCurrency(currencyCell) || 'CNY',
-            manufacturer: manufacturerCell || '',
-            classification: classificationCell || '',
-            composition: compositionCell || '',
-            weight: weightCell || '',
-            width: widthCell || ''
+            code: code, // 面料型号
+            colorCode: colorCode, // 色板型号
+            color: color || '', // 颜色
+            description: '', // 空描述
+            features: [], // 空特性
+            imageUrl: resolvedImageUrl, // 处理后的图片URL
+            category: 'amazon', // 默认分类
+            price: null,
+            moq: '',
+            currency: 'CNY',
+            manufacturer: '',
+            classification: '',
+            composition: '',
+            weight: '',
+            width: ''
         };
 
         added.push(fabric);
@@ -4212,6 +4671,40 @@ function buildFabricUploadedImageMap(imageFiles) {
                 uploadedFabricImageMap[lower] = compressedDataUrl;
                 uploadedFabricImageMap[noExt] = compressedDataUrl;
                 uploadedFabricImageMap[compact] = compressedDataUrl;
+                console.log(`图片 ${filename} 已压缩并处理，映射到: [${lower}, ${noExt}, ${compact}]`);
+            }
+            resolve();
+        });
+    }));
+    return Promise.all(readers);
+}
+
+// 构建色板上传图片映射
+function buildColorboardUploadedImageMap(imageFiles) {
+    uploadedColorboardImageMap = {};
+    console.log('开始处理色板图片文件，数量:', imageFiles.length);
+    
+    const readers = imageFiles.map(img => new Promise((resolve) => {
+        const filename = img.name;
+        const lower = filename.toLowerCase();
+        const noExt = lower.replace(/\.[a-z0-9]+$/, '');
+        const compact = lower.replace(/\s+/g, '');
+        
+        console.log(`处理图片文件: ${filename}, 大小: ${(img.size/1024).toFixed(1)}KB`);
+        
+        // 检查文件大小（限制为3MB，超过则压缩）
+        if (img.size > 3 * 1024 * 1024) {
+            console.warn(`图片 ${filename} 太大 (${(img.size/1024/1024).toFixed(1)}MB)，将跳过`);
+            resolve();
+            return;
+        }
+        
+        // 使用图片压缩功能
+        compressImage(img, filename, (compressedDataUrl) => {
+            if (compressedDataUrl) {
+                uploadedColorboardImageMap[lower] = compressedDataUrl;
+                uploadedColorboardImageMap[noExt] = compressedDataUrl;
+                uploadedColorboardImageMap[compact] = compressedDataUrl;
                 console.log(`图片 ${filename} 已压缩并处理，映射到: [${lower}, ${noExt}, ${compact}]`);
             }
             resolve();
