@@ -2082,6 +2082,12 @@ function setupColorboardFileHandlers() {
             <li>第十四列：备注（可选）</li>
             <li>如使用本地图片，请与Excel一同选择相应图片文件；第四列填写文件名（如 <code>fabric1.jpg</code>），系统会自动匹配。</li>
         `;
+        
+        // 显示覆盖选项（仅色板上传时显示）
+        const uploadOptions = modal ? modal.querySelector('.upload-options') : null;
+        if (uploadOptions) {
+            uploadOptions.style.display = 'block';
+        }
     }
     
     // 清除之前的事件监听器
@@ -3802,6 +3808,12 @@ function showFabricUploadModal() {
             <li>注意：面料上传只需要这几列数据，其他列将被忽略</li>
             <li>如使用本地图片，请与Excel一同选择相应图片文件；第四列填写文件名（如 <code>fabric1.jpg</code>），系统会自动匹配。</li>
         `;
+        
+        // 隐藏覆盖选项（面料上传时不显示）
+        const uploadOptions = modal ? modal.querySelector('.upload-options') : null;
+        if (uploadOptions) {
+            uploadOptions.style.display = 'none';
+        }
     }
     
     modal.classList.add('show');
@@ -4306,10 +4318,22 @@ function processColorboardExcelFile(file) {
             const worksheet = workbook.Sheets[sheetName];
             const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
             
-            const { added, skippedDuplicates } = parseColorboardExcelData(jsonData);
+            // 检查是否要覆盖原有数据
+            const overwriteCheckbox = document.getElementById('overwriteColorboardData');
+            const shouldOverwrite = overwriteCheckbox && overwriteCheckbox.checked;
+            
+            const { added, skippedDuplicates } = parseColorboardExcelData(jsonData, shouldOverwrite);
             if (added.length > 0) {
-                colorboards = [...colorboards, ...added];
-                console.log('色板数据上传成功，当前总数据条数:', colorboards.length);
+                if (shouldOverwrite) {
+                    // 覆盖模式：清空原有数据
+                    colorboards = [...added];
+                    console.log('色板数据已覆盖，新数据条数:', colorboards.length);
+                } else {
+                    // 追加模式：添加到现有数据
+                    colorboards = [...colorboards, ...added];
+                    console.log('色板数据上传成功，当前总数据条数:', colorboards.length);
+                }
+                
                 console.log('上传的图片映射键:', Object.keys(uploadedColorboardImageMap));
                 console.log('新增的色板数据:', added);
                 saveColorboards();
@@ -4317,10 +4341,11 @@ function processColorboardExcelFile(file) {
                 renderColorboard();
                 closeFabricUploadModal();
                 const dupMsg = skippedDuplicates.length ? `\n跳过重复：${skippedDuplicates.length} 个（${skippedDuplicates.join('、')}）` : '';
-                alert(`成功导入 ${added.length} 个色板数据！${Object.keys(uploadedColorboardImageMap).length ? '\n图片：已匹配本地文件（如有同名）' : ''}${dupMsg}`);
+                const modeMsg = shouldOverwrite ? '（已覆盖原有数据）' : '';
+                alert(`成功导入 ${added.length} 个色板数据！${modeMsg}${Object.keys(uploadedColorboardImageMap).length ? '\n图片：已匹配本地文件（如有同名）' : ''}${dupMsg}`);
                 pendingColorboardExcelFile = null;
             } else {
-                const { skippedDuplicates } = parseColorboardExcelData(jsonData);
+                const { skippedDuplicates } = parseColorboardExcelData(jsonData, shouldOverwrite);
                 if (skippedDuplicates && skippedDuplicates.length) {
                     alert(`全部被识别为重复，未导入。重复：${skippedDuplicates.join('、')}`);
                 } else {
@@ -4337,11 +4362,12 @@ function processColorboardExcelFile(file) {
 }
 
 // 解析色板Excel数据
-function parseColorboardExcelData(data) {
+function parseColorboardExcelData(data, shouldOverwrite = false) {
     const added = [];
     const skippedDuplicates = [];
     // 使用colorCode作为唯一标识
-    const existing = new Set(colorboards.map(c => (c.colorCode || '').toString().trim().toLowerCase()));
+    // 如果是覆盖模式，则不检查现有数据
+    const existing = shouldOverwrite ? new Set() : new Set(colorboards.map(c => (c.colorCode || '').toString().trim().toLowerCase()));
     const seenInFile = new Set();
 
     if (!data || data.length === 0) return { added, skippedDuplicates };

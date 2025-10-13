@@ -65,6 +65,32 @@
             background-color: #f8f9fa !important; /* 表头背景色 */
             z-index: 12 !important; /* 表头层级最高 */
         }
+
+        /* 上传选项样式 */
+        .upload-options {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 14px;
+            color: #495057;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.2);
+        }
+
+        .checkbox-label:hover {
+            color: #007bff;
+        }
     </style>
 </head>
 <body>
@@ -638,6 +664,15 @@
                         <button class="btn btn-secondary" onclick="event.stopPropagation();document.getElementById('fabricFileInput').click()">
                             选择文件（可多选）
                         </button>
+                    </div>
+                    <div class="upload-options">
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="overwriteColorboardData" checked>
+                                <span class="checkmark"></span>
+                                覆盖原有色板数据（勾选后将清空现有数据并导入新数据）
+                            </label>
+                        </div>
                     </div>
                     <div class="upload-instructions">
                         <h3>面料Excel与图片上传说明：</h3>
