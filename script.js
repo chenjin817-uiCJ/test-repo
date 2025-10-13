@@ -3150,7 +3150,7 @@ function renderColorboard() {
     noResults.style.display = 'none';
     tableBody.innerHTML = filteredColorboards.map(colorboard => `
         <tr data-colorboard-id="${colorboard.id}">
-            <td class="sticky-col sticky-col-1">
+            <td class="sticky-col sticky-col-1 resizable">
                 ${colorboard.imageUrl ? `
                     <img src="${colorboard.imageUrl}" alt="${colorboard.colorCode}" class="notion-table-image" data-image-src="${colorboard.imageUrl}" onerror="this.style.display='none'" />
                 ` : `
@@ -3159,30 +3159,30 @@ function renderColorboard() {
                     </div>
                 `}
             </td>
-            <td class="sticky-col sticky-col-2">
+            <td class="sticky-col sticky-col-2 resizable">
                 <div class="notion-table-cell">
                     <span>${colorboard.colorCode || '-'}</span>
                 </div>
             </td>
-            <td>
+            <td class="resizable">
                 <div class="notion-table-platform ${colorboard.category}">${getCategoryLabel(colorboard.category)}</div>
             </td>
-            <td>
+            <td class="resizable">
                 <div class="notion-table-cell">
                     <span class="notion-table-price">${colorboard.price ? `${colorboard.price} ${colorboard.currency === 'CNY' ? '¥' : '$'}` : '-'}</span>
                 </div>
             </td>
-            <td>
+            <td class="resizable">
                 <div class="notion-table-cell">
                     <span>${colorboard.moq || '-'}</span>
                 </div>
             </td>
-            <td>
+            <td class="resizable">
                 <div class="notion-table-cell">
                     <span>${colorboard.manufacturer || '-'}</span>
                 </div>
             </td>
-            <td>
+            <td class="resizable">
                 <div class="notion-table-cell">
                     <span>${colorboard.classification || '-'}</span>
                 </div>
@@ -3192,17 +3192,17 @@ function renderColorboard() {
                     <span>${colorboard.composition || '-'}</span>
                 </div>
             </td>
-            <td>
+            <td class="resizable">
                 <div class="notion-table-cell">
                     <span>${colorboard.weight || '-'}</span>
                 </div>
             </td>
-            <td>
+            <td class="resizable">
                 <div class="notion-table-cell">
                     <span>${colorboard.width || '-'}</span>
                 </div>
             </td>
-            <td>
+            <td class="resizable">
                 <div class="notion-table-cell">
                     <span>${colorboard.remarks || '-'}</span>
                 </div>
@@ -7821,7 +7821,48 @@ function initTableResize() {
 
         // 双击重置列宽
         handle.addEventListener('dblclick', () => {
-            const resetWidth = 120; // 默认宽度
+            // 根据列类型设置不同的默认宽度
+            let resetWidth = 120; // 默认宽度
+            
+            if (header.classList.contains('sticky-col-1')) {
+                resetWidth = 80; // 图片列
+            } else if (header.classList.contains('sticky-col-2')) {
+                resetWidth = 120; // 色板型号列
+            } else {
+                const sortField = header.getAttribute('data-sort');
+                switch (sortField) {
+                    case 'category':
+                        resetWidth = 100; // 平台列
+                        break;
+                    case 'price':
+                        resetWidth = 90; // 价格列
+                        break;
+                    case 'moq':
+                        resetWidth = 80; // MOQ列
+                        break;
+                    case 'manufacturer':
+                        resetWidth = 120; // 厂家列
+                        break;
+                    case 'classification':
+                        resetWidth = 100; // 归类列
+                        break;
+                    case 'composition':
+                        resetWidth = 150; // 成分列
+                        break;
+                    case 'weight':
+                        resetWidth = 80; // 克重列
+                        break;
+                    case 'width':
+                        resetWidth = 80; // 门幅列
+                        break;
+                    case 'remarks':
+                        resetWidth = 120; // 备注列
+                        break;
+                    default:
+                        resetWidth = 120;
+                }
+            }
+            
             header.style.width = resetWidth + 'px';
             
             // 同步更新所有行的对应列

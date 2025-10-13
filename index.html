@@ -126,6 +126,11 @@
             z-index: 10;
         }
 
+        /* 冻结列的调整手柄需要更高的层级 */
+        .sticky-col .resize-handle {
+            z-index: 13; /* 比冻结列的z-index更高 */
+        }
+
         .resize-handle:hover {
             background: #007bff;
         }
@@ -321,46 +326,53 @@
                             <table class="notion-table" id="colorboardTable">
                                 <thead>
                                     <tr>
-                                        <th class="notion-table-header sticky-col sticky-col-1" data-sort="image">
+                                        <th class="notion-table-header sticky-col sticky-col-1 resizable" data-sort="image">
                                             <div class="notion-table-header-content">
                                                 <span>图片</span>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header sticky-col sticky-col-2" data-sort="colorCode">
+                                        <th class="notion-table-header sticky-col sticky-col-2 resizable" data-sort="colorCode">
                                             <div class="notion-table-header-content">
                                                 <span>色板型号</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="category">
+                                        <th class="notion-table-header resizable" data-sort="category">
                                             <div class="notion-table-header-content">
                                                 <span>平台</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="price">
+                                        <th class="notion-table-header resizable" data-sort="price">
                                             <div class="notion-table-header-content">
                                                 <span>价格</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="moq">
+                                        <th class="notion-table-header resizable" data-sort="moq">
                                             <div class="notion-table-header-content">
                                                 <span>MOQ</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="manufacturer">
+                                        <th class="notion-table-header resizable" data-sort="manufacturer">
                                             <div class="notion-table-header-content">
                                                 <span>厂家</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="classification">
+                                        <th class="notion-table-header resizable" data-sort="classification">
                                             <div class="notion-table-header-content">
                                                 <span>归类</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
                                         <th class="notion-table-header resizable" data-sort="composition">
                                             <div class="notion-table-header-content">
@@ -369,23 +381,26 @@
                                             </div>
                                             <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="weight">
+                                        <th class="notion-table-header resizable" data-sort="weight">
                                             <div class="notion-table-header-content">
                                                 <span>克重</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="width">
+                                        <th class="notion-table-header resizable" data-sort="width">
                                             <div class="notion-table-header-content">
                                                 <span>门幅</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="remarks">
+                                        <th class="notion-table-header resizable" data-sort="remarks">
                                             <div class="notion-table-header-content">
                                                 <span>备注</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
                                         <th class="notion-table-header">
                                             <div class="notion-table-header-content">
