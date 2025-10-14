@@ -37,6 +37,10 @@ let uploadedHighlightImageMap = {}; // filename(lowercased) -> dataURL (base64) 
 let pendingHighlightExcelFile = null; // remember excel if images come first
 let currentHighlightCategory = 'all'; // 当前选择的产品卖点分类，用于动态显示按钮
 
+// 设计点分类相关变量
+let designPointCategories = [];
+let filteredDesignPointCategories = [];
+
 // 示例选项数据
 const sampleOptions = [
     {
@@ -395,6 +399,40 @@ const sampleHighlights = [
     }
 ];
 
+// 设计点分类示例数据
+const sampleDesignPointCategories = [
+    {
+        id: 1,
+        name: '外观设计',
+        description: '产品外观相关的设计点',
+        color: '#FF6B6B'
+    },
+    {
+        id: 2,
+        name: '功能设计',
+        description: '产品功能相关的设计点',
+        color: '#4ECDC4'
+    },
+    {
+        id: 3,
+        name: '材质工艺',
+        description: '材质和工艺相关的设计点',
+        color: '#45B7D1'
+    },
+    {
+        id: 4,
+        name: '人体工学',
+        description: '人体工学相关的设计点',
+        color: '#96CEB4'
+    },
+    {
+        id: 5,
+        name: '安全设计',
+        description: '安全相关的设计点',
+        color: '#FFEAA7'
+    }
+];
+
 // 初始化应用
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -624,6 +662,18 @@ function initializeApp() {
             console.log(`为桌子产品 ${highlight.name} 添加空的适用人数字段`);
         }
         
+        // 为设计点添加默认分类
+        if (highlight.designPoints && highlight.designPoints.length > 0) {
+            highlight.designPoints.forEach(dp => {
+                if (dp.categoryId === undefined) {
+                    // 为没有分类的设计点添加默认分类（第一个分类）
+                    dp.categoryId = designPointCategories.length > 0 ? designPointCategories[0].id : null;
+                    dataUpdated = true;
+                    console.log(`为设计点 ${dp.title} 添加默认分类`);
+                }
+            });
+        }
+        
         // 迁移 referenceLink 到 referenceLinks 数组
         if (highlight.referenceLink !== undefined) {
             highlight.referenceLinks = [
@@ -653,11 +703,27 @@ function initializeApp() {
     // 初始化当前分类状态（默认为'all'）
     currentHighlightCategory = 'all';
 
+    // 初始化设计点分类数据
+    try {
+        const storedDesignPointCategories = localStorage.getItem('designPointCategories_v1');
+        if (storedDesignPointCategories) {
+            designPointCategories = JSON.parse(storedDesignPointCategories);
+        } else {
+            designPointCategories = [...sampleDesignPointCategories];
+        }
+    } catch (e) {
+        designPointCategories = [...sampleDesignPointCategories];
+    }
+    filteredDesignPointCategories = [...designPointCategories];
+
     // 初始化选项数据
     loadOptions();
     
     // 填充材质选择框
     populateMaterialSelects();
+    
+    // 填充设计点分类选择框
+    populateDesignPointCategorySelects();
     
     // 填充色板型号选择框
     populateColorCodeSelects();
@@ -912,7 +978,33 @@ function setupEventListeners() {
                     }
                 }
             });
-    }
+        }
+
+        // 设计点分类管理表单事件
+        const addDesignPointCategoryForm = document.getElementById('addDesignPointCategoryForm');
+        if (addDesignPointCategoryForm) {
+            addDesignPointCategoryForm.addEventListener('submit', handleAddDesignPointCategory);
+        }
+
+        const editDesignPointCategoryForm = document.getElementById('editDesignPointCategoryForm');
+        if (editDesignPointCategoryForm) {
+            editDesignPointCategoryForm.addEventListener('submit', handleEditDesignPointCategory);
+        }
+
+        // 颜色选择器事件
+        const addColorInput = document.getElementById('addDesignPointCategoryColor');
+        if (addColorInput) {
+            addColorInput.addEventListener('change', function() {
+                updateColorPreview('addDesignPointCategoryColor', 'addDesignPointCategoryColorPreview');
+            });
+        }
+
+        const editColorInput = document.getElementById('editDesignPointCategoryColor');
+        if (editColorInput) {
+            editColorInput.addEventListener('change', function() {
+                updateColorPreview('editDesignPointCategoryColor', 'editDesignPointCategoryColorPreview');
+            });
+        }
 
     // 本地图片选择与预览
     const imageFileInput = document.getElementById('addImageFile');
@@ -5382,21 +5474,31 @@ function updateHighlightPageButtons() {
     const uploadButton = document.querySelector('#highlightsActions .btn-primary');
     
     if (addButton && uploadButton) {
-        let categoryText = '';
-        switch (currentHighlightCategory) {
-            case 'seating':
-                categoryText = '坐具';
-                break;
-            case 'table':
-                categoryText = '桌子';
-                break;
-            default:
-                categoryText = '产品';
-                break;
+        // 如果是"全部"分类，隐藏按钮
+        if (currentHighlightCategory === 'all') {
+            addButton.style.display = 'none';
+            uploadButton.style.display = 'none';
+        } else {
+            // 显示按钮并更新文本
+            addButton.style.display = 'inline-flex';
+            uploadButton.style.display = 'inline-flex';
+            
+            let categoryText = '';
+            switch (currentHighlightCategory) {
+                case 'seating':
+                    categoryText = '坐具';
+                    break;
+                case 'table':
+                    categoryText = '桌子';
+                    break;
+                default:
+                    categoryText = '产品';
+                    break;
+            }
+            
+            addButton.innerHTML = `<i class="fas fa-plus"></i> 新增${categoryText}卖点`;
+            uploadButton.innerHTML = `<i class="fas fa-upload"></i> 上传${categoryText}卖点数据`;
         }
-        
-        addButton.innerHTML = `<i class="fas fa-plus"></i> 新增${categoryText}卖点`;
-        uploadButton.innerHTML = `<i class="fas fa-upload"></i> 上传${categoryText}卖点数据`;
     }
 }
 
@@ -5631,6 +5733,11 @@ function showHighlightDetail(highlightId) {
                         ` : ''}
                         <div class="design-point-content">
                             <div class="design-point-title-display">${dp.title}</div>
+                            ${dp.categoryId ? `
+                                <div class="design-point-category-display">
+                                    ${getDesignPointCategoryTag(dp.categoryId)}
+                                </div>
+                            ` : ''}
                             <div class="design-point-description-display">${dp.description}</div>
                         </div>
                     </div>
@@ -5910,7 +6017,6 @@ function handleAddHighlight(e) {
     const nameInput = document.getElementById('addHighlightName');
     const parentModelInput = document.getElementById('addHighlightParentModel');
     const categoryInput = document.getElementById('addHighlightCategory');
-    const descriptionInput = document.getElementById('addHighlightDescription');
     const featuresInput = document.getElementById('addHighlightFeatures');
     const imgInput = document.getElementById('addHighlightImageUrl');
     const imgFileInput = document.getElementById('addHighlightImageFile');
@@ -5918,7 +6024,6 @@ function handleAddHighlight(e) {
     const name = nameInput.value.trim();
     const parentModel = parentModelInput.value.trim();
     const category = categoryInput.value;
-    const description = descriptionInput.value.trim();
     const featuresStr = featuresInput.value.trim();
     
     // 获取参考链接
@@ -5943,11 +6048,6 @@ function handleAddHighlight(e) {
     if (!category) {
         alert('请选择产品分类');
         categoryInput.focus();
-        return;
-    }
-    if (!description) {
-        alert('请填写卖点描述');
-        descriptionInput.focus();
         return;
     }
 
@@ -5996,7 +6096,7 @@ function handleAddHighlight(e) {
             name: name,
             parentModel: parentModel,
             category: category,
-            description: description,
+            description: '', // 设置为空字符串，保持数据结构一致
             features: featuresStr ? featuresStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
             referenceLinks: referenceLinks,
             imageUrl: finalImageUrl,
@@ -6040,7 +6140,6 @@ function handleAddHighlight(e) {
         nameInput.value = '';
         parentModelInput.value = '';
         categoryInput.value = '';
-        descriptionInput.value = '';
         featuresInput.value = '';
         document.getElementById('addHighlightReferenceLink1').value = '';
         document.getElementById('addHighlightReferenceLink2').value = '';
@@ -6328,10 +6427,262 @@ function saveHighlights() {
     try { localStorage.setItem('highlights_v1', JSON.stringify(highlights)); } catch (_) {}
 }
 
+// 保存设计点分类数据
+function saveDesignPointCategories() {
+    try { localStorage.setItem('designPointCategories_v1', JSON.stringify(designPointCategories)); } catch (_) {}
+}
+
 // ==================== 设计点管理功能 ====================
 
 // 设计点计数器（用于生成唯一ID）
 let designPointIdCounter = 1000;
+
+// ==================== 设计点分类管理功能 ====================
+
+// 渲染设计点分类列表
+function renderDesignPointCategories() {
+    const container = document.getElementById('designPointCategoryList');
+    if (!container) return;
+    
+    container.innerHTML = designPointCategories.map(category => `
+        <div class="category-item">
+            <div class="category-color-indicator" style="background-color: ${category.color}"></div>
+            <div class="category-info">
+                <div class="category-name">${category.name}</div>
+                <div class="category-description">${category.description || '暂无描述'}</div>
+            </div>
+            <div class="category-actions">
+                <button class="btn btn-sm btn-outline-primary" onclick="editDesignPointCategory(${category.id})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteDesignPointCategory(${category.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 填充设计点分类选择框
+function populateDesignPointCategorySelects() {
+    // 更新所有设计点分类选择框，包括动态添加的
+    const selects = document.querySelectorAll('select[id*="designPointCategory"]');
+    selects.forEach(select => {
+        if (select) {
+            // 保存当前选中的值
+            const currentValue = select.value;
+            
+            // 清空选项（保留第一个默认选项）
+            select.innerHTML = '<option value="">请选择设计点分类</option>';
+            
+            // 添加分类选项
+            designPointCategories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                option.style.color = category.color;
+                select.appendChild(option);
+            });
+            
+            // 恢复之前选中的值
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+    });
+}
+
+// 显示设计点分类管理模态框
+function showDesignPointCategoryManagement() {
+    const modal = document.getElementById('designPointCategoryManagementModal');
+    if (modal) {
+        renderDesignPointCategories();
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+        modal.style.pointerEvents = 'auto';
+        preventBodyScroll();
+    }
+}
+
+// 关闭设计点分类管理模态框
+function closeDesignPointCategoryManagement() {
+    const modal = document.getElementById('designPointCategoryManagementModal');
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.style.pointerEvents = '';
+        allowBodyScroll();
+    }
+}
+
+// 显示新增设计点分类模态框
+function showAddDesignPointCategoryModal() {
+    const modal = document.getElementById('addDesignPointCategoryModal');
+    if (modal) {
+        // 重置表单
+        document.getElementById('addDesignPointCategoryForm').reset();
+        document.getElementById('addDesignPointCategoryColor').value = '#FF6B6B';
+        updateColorPreview('addDesignPointCategoryColor', 'addDesignPointCategoryColorPreview');
+        
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+        modal.style.pointerEvents = 'auto';
+        preventBodyScroll();
+    }
+}
+
+// 关闭新增设计点分类模态框
+function closeAddDesignPointCategoryModal() {
+    const modal = document.getElementById('addDesignPointCategoryModal');
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.style.pointerEvents = '';
+        allowBodyScroll();
+    }
+}
+
+// 显示编辑设计点分类模态框
+function editDesignPointCategory(categoryId) {
+    const category = designPointCategories.find(c => c.id === categoryId);
+    if (!category) return;
+    
+    const modal = document.getElementById('editDesignPointCategoryModal');
+    if (modal) {
+        // 填充表单
+        document.getElementById('editDesignPointCategoryId').value = category.id;
+        document.getElementById('editDesignPointCategoryName').value = category.name;
+        document.getElementById('editDesignPointCategoryColor').value = category.color;
+        updateColorPreview('editDesignPointCategoryColor', 'editDesignPointCategoryColorPreview');
+        
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+        modal.style.pointerEvents = 'auto';
+        preventBodyScroll();
+    }
+}
+
+// 关闭编辑设计点分类模态框
+function closeEditDesignPointCategoryModal() {
+    const modal = document.getElementById('editDesignPointCategoryModal');
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.style.pointerEvents = '';
+        allowBodyScroll();
+    }
+}
+
+// 更新颜色预览
+function updateColorPreview(inputId, previewId) {
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(previewId);
+    if (input && preview) {
+        preview.style.backgroundColor = input.value;
+    }
+}
+
+// 处理新增设计点分类
+function handleAddDesignPointCategory(e) {
+    if (e) e.preventDefault();
+    
+    const name = document.getElementById('addDesignPointCategoryName').value.trim();
+    const color = document.getElementById('addDesignPointCategoryColor').value;
+    
+    if (!name) {
+        alert('请填写分类名称');
+        return;
+    }
+    
+    // 检查名称是否重复
+    if (designPointCategories.some(c => c.name === name)) {
+        alert('分类名称已存在');
+        return;
+    }
+    
+    const newCategory = {
+        id: Date.now(),
+        name: name,
+        description: '', // 设置为空字符串，保持数据结构一致
+        color: color
+    };
+    
+    designPointCategories.push(newCategory);
+    saveDesignPointCategories();
+    renderDesignPointCategories();
+    populateDesignPointCategorySelects();
+    closeAddDesignPointCategoryModal();
+    
+    alert('分类添加成功');
+}
+
+// 处理编辑设计点分类
+function handleEditDesignPointCategory(e) {
+    if (e) e.preventDefault();
+    
+    const id = parseInt(document.getElementById('editDesignPointCategoryId').value);
+    const name = document.getElementById('editDesignPointCategoryName').value.trim();
+    const color = document.getElementById('editDesignPointCategoryColor').value;
+    
+    if (!name) {
+        alert('请填写分类名称');
+        return;
+    }
+    
+    // 检查名称是否重复（排除当前分类）
+    if (designPointCategories.some(c => c.name === name && c.id !== id)) {
+        alert('分类名称已存在');
+        return;
+    }
+    
+    const categoryIndex = designPointCategories.findIndex(c => c.id === id);
+    if (categoryIndex !== -1) {
+        designPointCategories[categoryIndex] = {
+            ...designPointCategories[categoryIndex],
+            name: name,
+            color: color
+        };
+        
+        saveDesignPointCategories();
+        renderDesignPointCategories();
+        populateDesignPointCategorySelects();
+        closeEditDesignPointCategoryModal();
+        
+        alert('分类修改成功');
+    }
+}
+
+// 删除设计点分类
+function deleteDesignPointCategory(categoryId) {
+    const category = designPointCategories.find(c => c.id === categoryId);
+    if (!category) return;
+    
+    // 检查是否有设计点使用此分类
+    const hasDesignPoints = highlights.some(highlight => 
+        highlight.designPoints && highlight.designPoints.some(dp => dp.categoryId === categoryId)
+    );
+    
+    if (hasDesignPoints) {
+        alert('该分类下还有设计点，无法删除。请先删除或重新分类相关设计点。');
+        return;
+    }
+    
+    if (confirm(`确定删除分类"${category.name}"吗？`)) {
+        designPointCategories = designPointCategories.filter(c => c.id !== categoryId);
+        saveDesignPointCategories();
+        renderDesignPointCategories();
+        populateDesignPointCategorySelects();
+        alert('分类删除成功');
+    }
+}
+
+// 获取设计点分类标签HTML
+function getDesignPointCategoryTag(categoryId) {
+    const category = designPointCategories.find(c => c.id === categoryId);
+    if (!category) return '';
+    
+    return `<span class="design-point-category-tag" style="background-color: ${category.color}">${category.name}</span>`;
+}
 
 // 添加设计点
 function addDesignPoint(type) {
@@ -6354,6 +6705,17 @@ function addDesignPoint(type) {
                     <input type="text" id="designPointTitle_${designPointId}" placeholder="例如：实木框架设计" required>
                 </div>
                 <div class="form-group">
+                    <label for="designPointCategory_${designPointId}">设计点分类</label>
+                    <div class="category-select-container">
+                        <select id="designPointCategory_${designPointId}" required>
+                            <option value="">请选择设计点分类</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="showDesignPointCategoryManagement()" title="管理分类">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label for="designPointDescription_${designPointId}">设计点描述</label>
                     <textarea id="designPointDescription_${designPointId}" placeholder="详细描述这个设计点的特点和优势..." required></textarea>
                 </div>
@@ -6373,6 +6735,22 @@ function addDesignPoint(type) {
     `;
     
     container.insertAdjacentHTML('beforeend', designPointHtml);
+    
+        // 填充新添加的设计点分类选择框
+        const newSelect = document.getElementById(`designPointCategory_${designPointId}`);
+        if (newSelect) {
+            // 清空选项（保留第一个默认选项）
+            newSelect.innerHTML = '<option value="">请选择设计点分类</option>';
+            
+            // 添加分类选项
+            designPointCategories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                option.style.color = category.color;
+                newSelect.appendChild(option);
+            });
+        }
 }
 
 // 删除设计点
@@ -6413,14 +6791,16 @@ function getDesignPointsFromForm(type) {
     designPointItems.forEach(item => {
         const id = parseInt(item.getAttribute('data-id'));
         const title = document.getElementById(`designPointTitle_${id}`).value.trim();
+        const categoryId = parseInt(document.getElementById(`designPointCategory_${id}`).value);
         const description = document.getElementById(`designPointDescription_${id}`).value.trim();
         const imageUrl = document.getElementById(`designPointImageUrl_${id}`).value.trim();
         const imageFile = document.getElementById(`designPointImageFile_${id}`);
         
-        if (title && description) {
+        if (title && description && categoryId) {
             const designPoint = {
                 id: id,
                 title: title,
+                categoryId: categoryId,
                 description: description,
                 imageUrl: imageUrl
             };
@@ -6471,6 +6851,17 @@ function renderDesignPointsToForm(type, designPoints) {
                             <input type="text" id="designPointTitle_${designPointId}" value="${dp.title}" placeholder="例如：实木框架设计" required>
                         </div>
                         <div class="form-group">
+                            <label for="designPointCategory_${designPointId}">设计点分类</label>
+                            <div class="category-select-container">
+                                <select id="designPointCategory_${designPointId}" required>
+                                    <option value="">请选择设计点分类</option>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="showDesignPointCategoryManagement()" title="管理分类">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
                             <label for="designPointDescription_${designPointId}">设计点描述</label>
                             <textarea id="designPointDescription_${designPointId}" placeholder="详细描述这个设计点的特点和优势..." required>${dp.description}</textarea>
                         </div>
@@ -6490,6 +6881,21 @@ function renderDesignPointsToForm(type, designPoints) {
             `;
             
             container.insertAdjacentHTML('beforeend', designPointHtml);
+            
+            // 填充分类选择框并设置选中值
+            const select = document.getElementById(`designPointCategory_${designPointId}`);
+            if (select) {
+                designPointCategories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.id;
+                    option.textContent = category.name;
+                    option.style.color = category.color;
+                    if (dp.categoryId === category.id) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            }
         });
     }
 }
@@ -6510,6 +6916,25 @@ function openDesignPointEdit(designPointId, highlightId) {
     document.getElementById('editDesignPointTitle').value = designPoint.title;
     document.getElementById('editDesignPointDescription').value = designPoint.description;
     document.getElementById('editDesignPointImageUrl').value = designPoint.imageUrl || '';
+    
+    // 填充分类选择框
+    const categorySelect = document.getElementById('editDesignPointCategory');
+    if (categorySelect) {
+        // 清空选项
+        categorySelect.innerHTML = '<option value="">请选择设计点分类</option>';
+        
+        // 添加分类选项
+        designPointCategories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            option.style.color = category.color;
+            if (designPoint.categoryId === category.id) {
+                option.selected = true;
+            }
+            categorySelect.appendChild(option);
+        });
+    }
     
     // 重置文件输入和预览
     document.getElementById('editDesignPointImageFile').value = '';
@@ -6541,6 +6966,7 @@ function handleDesignPointEdit(e) {
     const designPointId = parseInt(document.getElementById('editDesignPointId').value);
     const highlightId = parseInt(document.getElementById('editDesignPointHighlightId').value);
     const title = document.getElementById('editDesignPointTitle').value.trim();
+    const categoryId = parseInt(document.getElementById('editDesignPointCategory').value);
     const description = document.getElementById('editDesignPointDescription').value.trim();
     const imageUrl = document.getElementById('editDesignPointImageUrl').value.trim();
     const imageFile = document.getElementById('editDesignPointImageFile');
@@ -6558,6 +6984,12 @@ function handleDesignPointEdit(e) {
         return;
     }
     
+    if (!categoryId) {
+        alert('请选择设计点分类');
+        document.getElementById('editDesignPointCategory').focus();
+        return;
+    }
+    
     // 处理图片
     const processImage = (finalImageUrl) => {
         // 找到对应的产品和设计点
@@ -6571,6 +7003,7 @@ function handleDesignPointEdit(e) {
         highlights[highlightIndex].designPoints[designPointIndex] = {
             ...highlights[highlightIndex].designPoints[designPointIndex],
             title: title,
+            categoryId: categoryId,
             description: description,
             imageUrl: finalImageUrl
         };

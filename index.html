@@ -1147,10 +1147,6 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="addHighlightDescription">卖点描述</label>
-                            <textarea id="addHighlightDescription" rows="3" placeholder="详细描述产品的主要卖点和特色..." required></textarea>
-                        </div>
-                        <div class="form-group">
                             <label for="addHighlightFeatures">核心卖点（用逗号分隔）</label>
                             <input type="text" id="addHighlightFeatures" placeholder="例如：舒适耐用,现代设计,易清洁">
                         </div>
@@ -1482,6 +1478,18 @@
                         </div>
                         
                         <div class="form-group">
+                            <label for="editDesignPointCategory">设计点分类</label>
+                            <div class="category-select-container">
+                                <select id="editDesignPointCategory" required>
+                                    <option value="">请选择设计点分类</option>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="showDesignPointCategoryManagement()" title="管理分类">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
                             <label for="editDesignPointDescription">设计点描述</label>
                             <textarea id="editDesignPointDescription" rows="3" placeholder="详细描述这个设计点的特点和优势..." required></textarea>
                         </div>
@@ -1505,6 +1513,104 @@
                                 <i class="fas fa-trash"></i> 删除设计点
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="closeDesignPointEditModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存修改
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设计点分类管理模态框 -->
+        <div class="modal" id="designPointCategoryManagementModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>设计点分类管理</h2>
+                    <button class="close-btn" onclick="closeDesignPointCategoryManagement()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="category-management-header">
+                        <button class="btn btn-primary" onclick="showAddDesignPointCategoryModal()">
+                            <i class="fas fa-plus"></i> 新增分类
+                        </button>
+                    </div>
+                    
+                    <div class="category-list" id="designPointCategoryList">
+                        <!-- 分类列表将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 新增设计点分类模态框 -->
+        <div class="modal" id="addDesignPointCategoryModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>新增设计点分类</h2>
+                    <button class="close-btn" onclick="closeAddDesignPointCategoryModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addDesignPointCategoryForm">
+                        <div class="form-group">
+                            <label for="addDesignPointCategoryName">分类名称</label>
+                            <input type="text" id="addDesignPointCategoryName" placeholder="例如：外观设计" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="addDesignPointCategoryColor">分类颜色</label>
+                            <div class="color-picker-container">
+                                <input type="color" id="addDesignPointCategoryColor" value="#FF6B6B">
+                                <span class="color-preview" id="addDesignPointCategoryColorPreview"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeAddDesignPointCategoryModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存分类
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑设计点分类模态框 -->
+        <div class="modal" id="editDesignPointCategoryModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>编辑设计点分类</h2>
+                    <button class="close-btn" onclick="closeEditDesignPointCategoryModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editDesignPointCategoryForm">
+                        <input type="hidden" id="editDesignPointCategoryId">
+                        
+                        <div class="form-group">
+                            <label for="editDesignPointCategoryName">分类名称</label>
+                            <input type="text" id="editDesignPointCategoryName" placeholder="例如：外观设计" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editDesignPointCategoryColor">分类颜色</label>
+                            <div class="color-picker-container">
+                                <input type="color" id="editDesignPointCategoryColor" value="#FF6B6B">
+                                <span class="color-preview" id="editDesignPointCategoryColorPreview"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" onclick="deleteDesignPointCategory()">
+                                <i class="fas fa-trash"></i> 删除分类
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="closeEditDesignPointCategoryModal()">取消</button>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-check"></i> 保存修改
                             </button>
