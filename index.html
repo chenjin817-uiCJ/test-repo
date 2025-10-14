@@ -732,9 +732,9 @@
                     <div class="upload-options">
                         <div class="form-group">
                             <label class="checkbox-label">
-                                <input type="checkbox" id="overwriteColorboardData" checked>
+                                <input type="checkbox" id="overwriteColorboardData">
                                 <span class="checkmark"></span>
-                                覆盖原有色板数据（勾选后将清空现有数据并导入新数据）
+                                覆盖原有色板数据（勾选后将清空现有数据并导入新数据，不勾选则新增+更新模式）
                             </label>
                         </div>
                     </div>
@@ -942,7 +942,7 @@
         <div class="modal" id="editColorboardFabricModal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>编辑面料</h2>
+                    <h2>编辑色板</h2>
                     <button class="close-btn" onclick="closeEditColorboardFabricModal()">
                         <i class="fas fa-times"></i>
                     </button>
@@ -1212,6 +1212,10 @@
                                 </select>
                             </div>
                             <div class="form-group">
+                                <label for="addHighlightTableCapacity">适用人数</label>
+                                <input type="text" id="addHighlightTableCapacity" placeholder="例如：4人、6-8人">
+                            </div>
+                            <div class="form-group">
                                 <label for="addHighlightTableFunction">功能</label>
                                 <input type="text" id="addHighlightTableFunction" placeholder="例如：可伸缩设计">
                             </div>
@@ -1357,6 +1361,10 @@
                                 <select id="editHighlightTableLegMaterial">
                                     <option value="">请选择脚材质</option>
                                 </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editHighlightTableCapacity">适用人数</label>
+                                <input type="text" id="editHighlightTableCapacity" placeholder="例如：4人、6-8人">
                             </div>
                             <div class="form-group">
                                 <label for="editHighlightTableFunction">功能</label>

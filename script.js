@@ -616,6 +616,13 @@ function initializeApp() {
             console.log(`为桌子产品 ${highlight.name} 添加空的面板材质字段`);
         }
         
+        // 为桌子类产品添加适用人数字段
+        if (highlight.category === 'table' && highlight.capacity === undefined) {
+            highlight.capacity = '';
+            dataUpdated = true;
+            console.log(`为桌子产品 ${highlight.name} 添加空的适用人数字段`);
+        }
+        
         // 迁移 referenceLink 到 referenceLinks 数组
         if (highlight.referenceLink !== undefined) {
             highlight.referenceLinks = [
@@ -743,6 +750,8 @@ function setupEventListeners() {
     const fabricFileInput = document.getElementById('fabricFileInput');
     if (fabricFileInput) {
         fabricFileInput.addEventListener('change', handleFabricFileUpload);
+        // 标记为面料处理器
+        fabricFileInput.dataset.fabricHandler = 'true';
     }
 
     // 面料拖拽上传
@@ -2125,12 +2134,31 @@ function setupColorboardFileHandlers() {
         }
     }
     
-    // 清除之前的事件监听器
-    const newFabricFileInput = fabricFileInput.cloneNode(true);
-    fabricFileInput.parentNode.replaceChild(newFabricFileInput, fabricFileInput);
+    // 检查是否已经设置过色板处理器
+    if (fabricFileInput && fabricFileInput.dataset.colorboardHandler === 'true') {
+        console.log('色板处理器已设置，跳过');
+        return; // 已经设置过，直接返回
+    }
+    
+    if (!fabricFileInput) {
+        console.error('找不到 fabricFileInput 元素');
+        return;
+    }
+    
+    console.log('开始设置色板处理器');
+    
+    // 先移除所有可能存在的事件监听器
+    fabricFileInput.removeEventListener('change', handleFabricFileUpload);
+    fabricFileInput.removeEventListener('change', handleColorboardFileUpload);
+    
+    // 标记为色板处理器
+    fabricFileInput.dataset.colorboardHandler = 'true';
+    fabricFileInput.dataset.fabricHandler = 'false';
     
     // 添加色板专用的文件上传处理
-    newFabricFileInput.addEventListener('change', handleColorboardFileUpload);
+    fabricFileInput.addEventListener('change', handleColorboardFileUpload);
+    
+    console.log('色板处理器设置完成');
     
     // 色板拖拽上传
     if (fabricUploadArea) {
@@ -2144,7 +2172,7 @@ function setupColorboardFileHandlers() {
         fabricUploadArea.addEventListener('drop', handleColorboardDrop);
         fabricUploadArea.addEventListener('click', (e) => {
             if (e.target && e.target.closest('button')) return;
-            newFabricFileInput.click();
+            fabricFileInput.click();
         });
     }
 }
@@ -2152,6 +2180,16 @@ function setupColorboardFileHandlers() {
 // 处理色板文件上传
 async function handleColorboardFileUpload(e) {
     const input = e.target;
+    console.log('色板文件上传处理器被调用');
+    console.log('input.dataset.fabricHandler:', input.dataset.fabricHandler);
+    console.log('input.dataset.colorboardHandler:', input.dataset.colorboardHandler);
+    
+    // 检查是否是色板处理器
+    if (input.dataset.fabricHandler === 'true' || input.dataset.colorboardHandler !== 'true') {
+        console.log('检测到面料处理器或未标记为色板处理器，跳过色板处理');
+        return; // 如果是面料处理器或未标记为色板处理器，不处理
+    }
+    
     const files = Array.from(input.files || []);
     if (!files.length) return;
 
@@ -3427,11 +3465,27 @@ function showColorboardDetail(fabricId) {
 
 // 显示色板编辑面料表单
 function showEditColorboardFabricModal(fabricId) {
+    console.log('showEditColorboardFabricModal 被调用，fabricId:', fabricId);
     const fabric = fabrics.find(f => f.id === fabricId);
-    if (!fabric) return;
+    if (!fabric) {
+        console.log('未找到面料，fabricId:', fabricId);
+        return;
+    }
     
     const modal = document.getElementById('editColorboardFabricModal');
     const form = document.getElementById('editColorboardFabricForm');
+    console.log('找到的模态框:', modal);
+    
+    // 设置模态框标题为"编辑色板"
+    const modalTitle = modal.querySelector('h2');
+    console.log('找到的标题元素:', modalTitle);
+    if (modalTitle) {
+        console.log('设置标题为: 编辑色板');
+        modalTitle.textContent = '编辑色板';
+        console.log('标题已设置为:', modalTitle.textContent);
+    } else {
+        console.log('未找到标题元素');
+    }
     
     // 填充表单数据
     document.getElementById('editColorboardFabricId').value = fabric.id;
@@ -3469,22 +3523,31 @@ function showEditColorboardFabricModal(fabricId) {
 
 // 关闭色板编辑面料表单
 function closeEditColorboardFabricModal() {
+    console.log('closeEditColorboardFabricModal 被调用');
     const modal = document.getElementById('editColorboardFabricModal');
+    console.log('找到的模态框:', modal);
     const modalContent = modal ? modal.querySelector('.modal-content') : null;
     
-    modal.classList.remove('show');
-    modal.style.display = 'none';
-    modal.style.pointerEvents = '';
-    
-    // 清理样式
-    if (modalContent) {
-        modalContent.style.overflowY = '';
-        modalContent.style.maxHeight = '';
-        modalContent.style.height = '';
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.style.pointerEvents = '';
+        console.log('模态框样式已重置');
+        
+        // 清理样式
+        if (modalContent) {
+            modalContent.style.overflowY = '';
+            modalContent.style.maxHeight = '';
+            modalContent.style.height = '';
+            console.log('模态框内容样式已清理');
+        }
+        
+        // 恢复背景页面滚动
+        allowBodyScroll();
+        console.log('背景滚动已恢复');
+    } else {
+        console.log('未找到编辑色板面料模态框');
     }
-    
-    // 恢复背景页面滚动
-    allowBodyScroll();
     
     // 清除表单
     document.getElementById('editColorboardFabricForm').reset();
@@ -3615,7 +3678,9 @@ function attachColorboardColorCodeBlurValidation(input) {
 
 // 删除色板面料
 function deleteColorboardFabric() {
+    console.log('deleteColorboardFabric 被调用');
     const fabricId = document.getElementById('editColorboardFabricId').value;
+    console.log('获取到的面料ID:', fabricId);
     if (!fabricId) {
         alert('无法获取面料ID');
         return;
@@ -3623,24 +3688,44 @@ function deleteColorboardFabric() {
     
     // 确认删除
     if (!confirm('确定要删除这个面料吗？此操作无法撤销。')) {
+        console.log('用户取消删除');
         return;
     }
     
-    // 从数组中删除
-    const fabricIndex = fabrics.findIndex(f => f.id == fabricId);
+    console.log('开始删除面料，ID:', fabricId);
+    console.log('当前colorboards数组长度:', colorboards ? colorboards.length : 'colorboards未定义');
+    
+    // 从colorboards数组中删除（色板管理页面使用的是colorboards数组）
+    const fabricIndex = colorboards.findIndex(c => c.id == fabricId);
+    console.log('找到的面料索引:', fabricIndex);
     if (fabricIndex === -1) {
         alert('面料不存在');
         return;
     }
     
-    fabrics.splice(fabricIndex, 1);
-    saveFabrics();
+    console.log('准备从colorboards数组中删除面料，索引:', fabricIndex);
+    colorboards.splice(fabricIndex, 1);
+    console.log('面料已从colorboards数组中删除，准备保存');
+    
+    try {
+        saveColorboards();
+        console.log('色板数据保存成功');
+    } catch (error) {
+        console.error('保存色板数据时出错:', error);
+    }
     
     // 关闭模态框
-    closeEditColorboardFabricModal();
+    console.log('准备关闭模态框');
+    try {
+        closeEditColorboardFabricModal();
+        console.log('模态框关闭函数已调用');
+    } catch (error) {
+        console.error('关闭模态框时出错:', error);
+    }
     
     // 刷新显示
     renderColorboard();
+    console.log('页面已刷新');
     
     alert('面料删除成功');
 }
@@ -3887,6 +3972,23 @@ function closeFabricUploadModal() {
     
     // 恢复背景页面滚动
     allowBodyScroll();
+    
+    // 重置文件处理器标记，以便下次可以正确设置
+    const fabricFileInput = document.getElementById('fabricFileInput');
+    if (fabricFileInput) {
+        console.log('重置文件处理器标记');
+        // 移除所有事件监听器
+        fabricFileInput.removeEventListener('change', handleFabricFileUpload);
+        fabricFileInput.removeEventListener('change', handleColorboardFileUpload);
+        
+        // 清除标记
+        delete fabricFileInput.dataset.colorboardHandler;
+        delete fabricFileInput.dataset.fabricHandler;
+        
+        // 恢复为面料处理器（因为默认是面料管理页面）
+        fabricFileInput.dataset.fabricHandler = 'true';
+        fabricFileInput.addEventListener('change', handleFabricFileUpload);
+    }
     
     pendingFabricExcelFile = null;
 }
@@ -4248,16 +4350,69 @@ function handleAddFabric(e) {
 
 // 删除面料
 function deleteFabric(fabricId) {
+    console.log('deleteFabric 被调用，fabricId:', fabricId);
     const fabric = fabrics.find(f => f.id === fabricId);
-    if (!fabric) return;
+    if (!fabric) {
+        console.log('未找到面料，fabricId:', fabricId);
+        return;
+    }
     
     // 使用 colorCode 或 code 来显示确认信息
     const displayName = fabric.colorCode || fabric.code || '此面料';
     const confirmDelete = confirm(`确定删除 "${displayName}" 吗？该操作不可恢复。`);
-    if (!confirmDelete) return;
+    if (!confirmDelete) {
+        console.log('用户取消删除');
+        return;
+    }
+    
+    console.log('开始删除面料:', displayName);
 
     fabrics = fabrics.filter(f => f.id !== fabricId);
     saveFabrics();
+    
+    // 关闭编辑面料模态框
+    const editModal = document.getElementById('editFabricModal');
+    console.log('尝试关闭编辑模态框，editModal:', editModal);
+    if (editModal) {
+        console.log('关闭编辑模态框');
+        editModal.classList.remove('show');
+        editModal.style.display = 'none';
+        editModal.style.pointerEvents = '';
+        
+        const modalContent = editModal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.style.overflowY = '';
+            modalContent.style.maxHeight = '';
+            modalContent.style.height = '';
+        }
+        
+        allowBodyScroll();
+        console.log('编辑模态框已关闭');
+    } else {
+        console.log('未找到编辑模态框');
+    }
+    
+    // 关闭面料详情模态框
+    const fabricModal = document.getElementById('fabricModal');
+    console.log('尝试关闭面料详情模态框，fabricModal:', fabricModal);
+    if (fabricModal) {
+        console.log('关闭面料详情模态框');
+        fabricModal.classList.remove('show');
+        fabricModal.style.display = 'none';
+        fabricModal.style.pointerEvents = '';
+        
+        const modalContent = fabricModal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.style.overflowY = '';
+            modalContent.style.maxHeight = '';
+            modalContent.style.height = '';
+        }
+        
+        allowBodyScroll();
+        console.log('面料详情模态框已关闭');
+    } else {
+        console.log('未找到面料详情模态框');
+    }
     
     // 检查当前在哪个页面，调用相应的渲染函数
     const colorboardPage = document.getElementById('colorboard');
@@ -4278,13 +4433,21 @@ function deleteFabric(fabricId) {
         applyColorboardFilters();
         renderColorboard();
     }
-    
-    closeFabricModal();
 }
 
 // 处理面料文件上传
 async function handleFabricFileUpload(e) {
     const input = e.target;
+    console.log('面料文件上传处理器被调用');
+    console.log('input.dataset.fabricHandler:', input.dataset.fabricHandler);
+    console.log('input.dataset.colorboardHandler:', input.dataset.colorboardHandler);
+    
+    // 检查是否是面料处理器
+    if (input.dataset.colorboardHandler === 'true' || input.dataset.fabricHandler === 'false') {
+        console.log('检测到色板处理器，跳过面料处理');
+        return; // 如果是色板处理器，不处理
+    }
+    
     const files = Array.from(input.files || []);
     if (!files.length) return;
 
@@ -4399,27 +4562,39 @@ function processColorboardExcelFile(file) {
             const overwriteCheckbox = document.getElementById('overwriteColorboardData');
             const shouldOverwrite = overwriteCheckbox && overwriteCheckbox.checked;
             
-            const { added, skippedDuplicates } = parseColorboardExcelData(jsonData, shouldOverwrite);
-            if (added.length > 0) {
+            const { added, updated, skippedDuplicates } = parseColorboardExcelData(jsonData, shouldOverwrite);
+            if (added.length > 0 || updated.length > 0) {
                 if (shouldOverwrite) {
                     // 覆盖模式：清空原有数据
                     colorboards = [...added];
                     console.log('色板数据已覆盖，新数据条数:', colorboards.length);
                 } else {
-                    // 追加模式：添加到现有数据
+                    // 混合模式：新增 + 更新
+                    // 先更新现有数据
+                    updated.forEach(updatedItem => {
+                        const index = colorboards.findIndex(c => c.id === updatedItem.id);
+                        if (index !== -1) {
+                            colorboards[index] = updatedItem;
+                        }
+                    });
+                    // 再添加新数据
                     colorboards = [...colorboards, ...added];
                     console.log('色板数据上传成功，当前总数据条数:', colorboards.length);
+                    console.log('新增数据:', added.length, '条');
+                    console.log('更新数据:', updated.length, '条');
                 }
                 
                 console.log('上传的图片映射键:', Object.keys(uploadedColorboardImageMap));
                 console.log('新增的色板数据:', added);
+                console.log('更新的色板数据:', updated);
                 saveColorboards();
                 applyColorboardFilters();
                 renderColorboard();
                 closeFabricUploadModal();
                 const dupMsg = skippedDuplicates.length ? `\n跳过重复：${skippedDuplicates.length} 个（${skippedDuplicates.join('、')}）` : '';
                 const modeMsg = shouldOverwrite ? '（已覆盖原有数据）' : '';
-                alert(`成功导入 ${added.length} 个色板数据！${modeMsg}${Object.keys(uploadedColorboardImageMap).length ? '\n图片：已匹配本地文件（如有同名）' : ''}${dupMsg}`);
+                const updateMsg = updated.length > 0 ? `\n更新：${updated.length} 个` : '';
+                alert(`成功导入 ${added.length} 个色板数据！${updateMsg}${modeMsg}${Object.keys(uploadedColorboardImageMap).length ? '\n图片：已匹配本地文件（如有同名）' : ''}${dupMsg}`);
                 pendingColorboardExcelFile = null;
             } else {
                 const { skippedDuplicates } = parseColorboardExcelData(jsonData, shouldOverwrite);
@@ -4441,13 +4616,14 @@ function processColorboardExcelFile(file) {
 // 解析色板Excel数据
 function parseColorboardExcelData(data, shouldOverwrite = false) {
     const added = [];
+    const updated = [];
     const skippedDuplicates = [];
     // 使用colorCode作为唯一标识
     // 如果是覆盖模式，则不检查现有数据
     const existing = shouldOverwrite ? new Set() : new Set(colorboards.map(c => (c.colorCode || '').toString().trim().toLowerCase()));
     const seenInFile = new Set();
 
-    if (!data || data.length === 0) return { added, skippedDuplicates };
+    if (!data || data.length === 0) return { added, updated, skippedDuplicates };
 
     // 头部行
     const headers = (data[0] || []).map(h => (h || '').toString().trim());
@@ -4478,10 +4654,19 @@ function parseColorboardExcelData(data, shouldOverwrite = false) {
         const colorCode = get(idx.colorCode);
         if (!colorCode) continue; // 使用colorCode作为必填字段
         const lower = colorCode.toLowerCase();
-        if (existing.has(lower) || seenInFile.has(lower)) {
+        
+        // 检查是否已存在（在现有数据或当前文件中）
+        const isExisting = existing.has(lower);
+        const isSeenInFile = seenInFile.has(lower);
+        
+        if (isSeenInFile) {
+            // 当前文件中重复，跳过
             skippedDuplicates.push(colorCode);
             continue;
         }
+        
+        // 标记为已见过
+        seenInFile.add(lower);
 
         const description = get(idx.description);
         const featuresStr = get(idx.features);
@@ -4530,7 +4715,7 @@ function parseColorboardExcelData(data, shouldOverwrite = false) {
         }
 
         const colorboard = {
-            id: Date.now() + i,
+            id: isExisting ? colorboards.find(c => c.colorCode.toLowerCase() === lower)?.id || Date.now() + i : Date.now() + i,
             colorCode: colorCode || '',
             description: description || '暂无描述',
             features: featuresStr ? featuresStr.split(/[,，]/).map(s => s.trim()).filter(s => s) : [],
@@ -4547,11 +4732,16 @@ function parseColorboardExcelData(data, shouldOverwrite = false) {
             remarks: remarksCell || ''  // 第十四列：备注
         };
 
+        if (isExisting) {
+            // 更新现有数据
+            updated.push(colorboard);
+        } else {
+            // 新增数据
         added.push(colorboard);
-        seenInFile.add(lower);
+        }
     }
 
-    return { added, skippedDuplicates };
+    return { added, updated, skippedDuplicates };
 }
 
 // 解析面料Excel数据 - 只处理三列：色板型号、面料型号、颜色
@@ -5237,6 +5427,7 @@ function showHighlightDetail(highlightId) {
             ${highlight.category === 'table' ? `
                 <p><strong>面板材质：</strong>${formatMaterialLink(highlight.panelMaterial, 'wood')}</p>
                 <p><strong>脚材质：</strong>${formatMaterialLink(highlight.legMaterial, 'wood')}</p>
+                <p><strong>适用人数：</strong>${highlight.capacity || '未填写'}</p>
                 <p><strong>功能：</strong>${highlight.function || '未填写'}</p>
             ` : `
                 <p><strong>面料材质：</strong>${formatFabricLink(highlight.fabricMaterial)}</p>
@@ -5477,6 +5668,7 @@ function showEditHighlightModal(highlightId) {
             tableMaterialFields.style.display = 'block';
             document.getElementById('editHighlightPanelMaterial').value = highlight.panelMaterial || '';
             document.getElementById('editHighlightTableLegMaterial').value = highlight.legMaterial || '';
+            document.getElementById('editHighlightTableCapacity').value = highlight.capacity || '';
             document.getElementById('editHighlightTableFunction').value = highlight.function || '';
         } else {
             materialFields.style.display = 'none';
@@ -5662,10 +5854,12 @@ function handleAddHighlight(e) {
         } else if (category === 'table') {
             const panelMaterial = document.getElementById('addHighlightPanelMaterial').value.trim();
             const legMaterial = document.getElementById('addHighlightTableLegMaterial').value.trim();
+            const capacity = document.getElementById('addHighlightTableCapacity').value.trim();
             const functionValue = document.getElementById('addHighlightTableFunction').value.trim();
             
             newHighlight.panelMaterial = panelMaterial;
             newHighlight.legMaterial = legMaterial;
+            newHighlight.capacity = capacity;
             newHighlight.function = functionValue;
         }
         
@@ -5713,6 +5907,7 @@ function handleAddHighlight(e) {
             tableMaterialFields.style.display = 'none';
             document.getElementById('addHighlightPanelMaterial').value = '';
             document.getElementById('addHighlightTableLegMaterial').value = '';
+            document.getElementById('addHighlightTableCapacity').value = '';
             document.getElementById('addHighlightTableFunction').value = '';
         }
         
@@ -5859,10 +6054,12 @@ function handleEditHighlight(e) {
             } else if (category === 'table') {
                 const panelMaterial = document.getElementById('editHighlightPanelMaterial').value.trim();
                 const legMaterial = document.getElementById('editHighlightTableLegMaterial').value.trim();
+                const capacity = document.getElementById('editHighlightTableCapacity').value.trim();
                 const functionValue = document.getElementById('editHighlightTableFunction').value.trim();
                 
                 updateData.panelMaterial = panelMaterial;
                 updateData.legMaterial = legMaterial;
+                updateData.capacity = capacity;
                 updateData.function = functionValue;
                 
                 // 删除沙发/椅子专用字段
