@@ -91,6 +91,59 @@
         .checkbox-label:hover {
             color: #007bff;
         }
+
+        /* 表格列宽调整样式 */
+        .notion-table {
+            table-layout: fixed; /* 固定表格布局以支持列宽调整 */
+        }
+
+        .notion-table th,
+        .notion-table td {
+            position: relative;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* 可调整宽度的列 */
+        .notion-table th.resizable,
+        .notion-table td.resizable {
+            min-width: 80px;
+            max-width: 300px;
+            resize: horizontal;
+            overflow: visible;
+        }
+
+        /* 调整手柄 */
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            background: transparent;
+            cursor: col-resize;
+            z-index: 10;
+        }
+
+        /* 冻结列的调整手柄需要更高的层级 */
+        .sticky-col .resize-handle {
+            z-index: 13; /* 比冻结列的z-index更高 */
+        }
+
+        .resize-handle:hover {
+            background: #007bff;
+        }
+
+        .resize-handle:active {
+            background: #0056b3;
+        }
+
+        /* 调整时的高亮效果 */
+        .notion-table th.resizing,
+        .notion-table td.resizing {
+            background-color: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -273,70 +326,81 @@
                             <table class="notion-table" id="colorboardTable">
                                 <thead>
                                     <tr>
-                                        <th class="notion-table-header sticky-col sticky-col-1" data-sort="image">
+                                        <th class="notion-table-header sticky-col sticky-col-1 resizable" data-sort="image">
                                             <div class="notion-table-header-content">
                                                 <span>图片</span>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header sticky-col sticky-col-2" data-sort="colorCode">
+                                        <th class="notion-table-header sticky-col sticky-col-2 resizable" data-sort="colorCode">
                                             <div class="notion-table-header-content">
                                                 <span>色板型号</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="category">
+                                        <th class="notion-table-header resizable" data-sort="category">
                                             <div class="notion-table-header-content">
                                                 <span>平台</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="price">
+                                        <th class="notion-table-header resizable" data-sort="price">
                                             <div class="notion-table-header-content">
                                                 <span>价格</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="moq">
+                                        <th class="notion-table-header resizable" data-sort="moq">
                                             <div class="notion-table-header-content">
                                                 <span>MOQ</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="manufacturer">
+                                        <th class="notion-table-header resizable" data-sort="manufacturer">
                                             <div class="notion-table-header-content">
                                                 <span>厂家</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="classification">
+                                        <th class="notion-table-header resizable" data-sort="classification">
                                             <div class="notion-table-header-content">
                                                 <span>归类</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="composition">
+                                        <th class="notion-table-header resizable" data-sort="composition">
                                             <div class="notion-table-header-content">
                                                 <span>成分</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="weight">
+                                        <th class="notion-table-header resizable" data-sort="weight">
                                             <div class="notion-table-header-content">
                                                 <span>克重</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="width">
+                                        <th class="notion-table-header resizable" data-sort="width">
                                             <div class="notion-table-header-content">
                                                 <span>门幅</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
-                                        <th class="notion-table-header" data-sort="remarks">
+                                        <th class="notion-table-header resizable" data-sort="remarks">
                                             <div class="notion-table-header-content">
                                                 <span>备注</span>
                                                 <i class="fas fa-sort sort-icon"></i>
                                             </div>
+                                            <div class="resize-handle"></div>
                                         </th>
                                         <th class="notion-table-header">
                                             <div class="notion-table-header-content">
@@ -668,9 +732,9 @@
                     <div class="upload-options">
                         <div class="form-group">
                             <label class="checkbox-label">
-                                <input type="checkbox" id="overwriteColorboardData" checked>
+                                <input type="checkbox" id="overwriteColorboardData">
                                 <span class="checkmark"></span>
-                                覆盖原有色板数据（勾选后将清空现有数据并导入新数据）
+                                覆盖原有色板数据（勾选后将清空现有数据并导入新数据，不勾选则新增+更新模式）
                             </label>
                         </div>
                     </div>
@@ -878,7 +942,7 @@
         <div class="modal" id="editColorboardFabricModal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>编辑面料</h2>
+                    <h2>编辑色板</h2>
                     <button class="close-btn" onclick="closeEditColorboardFabricModal()">
                         <i class="fas fa-times"></i>
                     </button>
@@ -1148,6 +1212,10 @@
                                 </select>
                             </div>
                             <div class="form-group">
+                                <label for="addHighlightTableCapacity">适用人数</label>
+                                <input type="text" id="addHighlightTableCapacity" placeholder="例如：4人、6-8人">
+                            </div>
+                            <div class="form-group">
                                 <label for="addHighlightTableFunction">功能</label>
                                 <input type="text" id="addHighlightTableFunction" placeholder="例如：可伸缩设计">
                             </div>
@@ -1293,6 +1361,10 @@
                                 <select id="editHighlightTableLegMaterial">
                                     <option value="">请选择脚材质</option>
                                 </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editHighlightTableCapacity">适用人数</label>
+                                <input type="text" id="editHighlightTableCapacity" placeholder="例如：4人、6-8人">
                             </div>
                             <div class="form-group">
                                 <label for="editHighlightTableFunction">功能</label>
