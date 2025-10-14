@@ -35,6 +35,7 @@ let highlightCategoryFilter = 'all'; // all | sofa | chair | table
 let highlightSearchQuery = '';
 let uploadedHighlightImageMap = {}; // filename(lowercased) -> dataURL (base64) or URL
 let pendingHighlightExcelFile = null; // remember excel if images come first
+let currentHighlightCategory = 'all'; // 当前选择的产品卖点分类，用于动态显示按钮
 
 // 示例选项数据
 const sampleOptions = [
@@ -648,6 +649,9 @@ function initializeApp() {
 
     // 初始化产品卖点过滤
     applyHighlightFilters();
+    
+    // 初始化当前分类状态（默认为'all'）
+    currentHighlightCategory = 'all';
 
     // 初始化选项数据
     loadOptions();
@@ -3159,6 +3163,7 @@ function switchPage(page) {
         renderColorboardWithResize();
     } else if (page === 'highlights') {
         highlightsActions.style.display = 'flex';
+        updateHighlightPageButtons(); // 更新按钮文本
         renderHighlights();
     } else if (page === 'options') {
         renderOptions();
@@ -5362,9 +5367,167 @@ function openOfficeChairPage() {
 // 设置产品卖点分类过滤
 function setHighlightCategoryFilter(cat, event) {
     highlightCategoryFilter = cat;
+    currentHighlightCategory = cat; // 更新当前分类状态
     const buttons = document.querySelectorAll('.category-btn');
     buttons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-category') === cat));
     applyHighlightFilters();
+    
+    // 更新页面按钮文本
+    updateHighlightPageButtons();
+}
+
+// 更新产品卖点页面按钮文本
+function updateHighlightPageButtons() {
+    const addButton = document.querySelector('#highlightsActions .btn-secondary');
+    const uploadButton = document.querySelector('#highlightsActions .btn-primary');
+    
+    if (addButton && uploadButton) {
+        let categoryText = '';
+        switch (currentHighlightCategory) {
+            case 'seating':
+                categoryText = '坐具';
+                break;
+            case 'table':
+                categoryText = '桌子';
+                break;
+            default:
+                categoryText = '产品';
+                break;
+        }
+        
+        addButton.innerHTML = `<i class="fas fa-plus"></i> 新增${categoryText}卖点`;
+        uploadButton.innerHTML = `<i class="fas fa-upload"></i> 上传${categoryText}卖点数据`;
+    }
+}
+
+// 根据当前分类更新新增卖点模态框
+function updateAddHighlightModalForCategory() {
+    const modal = document.getElementById('addHighlightModal');
+    const modalTitle = modal ? modal.querySelector('h2') : null;
+    const categorySelect = document.getElementById('addHighlightCategory');
+    
+    if (modalTitle) {
+        let categoryText = '';
+        switch (currentHighlightCategory) {
+            case 'seating':
+                categoryText = '坐具';
+                break;
+            case 'table':
+                categoryText = '桌子';
+                break;
+            default:
+                categoryText = '产品';
+                break;
+        }
+        modalTitle.textContent = `新增${categoryText}卖点`;
+    }
+    
+    // 预选当前分类
+    if (categorySelect && currentHighlightCategory !== 'all') {
+        categorySelect.value = currentHighlightCategory;
+        
+        // 触发分类改变事件以显示对应的材质字段
+        const event = new Event('change');
+        categorySelect.dispatchEvent(event);
+    }
+}
+
+// 根据当前分类更新上传卖点数据模态框
+function updateHighlightUploadModalForCategory() {
+    const modal = document.getElementById('highlightUploadModal');
+    const modalTitle = modal ? modal.querySelector('h2') : null;
+    const instructions = modal ? modal.querySelector('.upload-instructions') : null;
+    
+    if (modalTitle) {
+        let categoryText = '';
+        switch (currentHighlightCategory) {
+            case 'seating':
+                categoryText = '坐具';
+                break;
+            case 'table':
+                categoryText = '桌子';
+                break;
+            default:
+                categoryText = '产品';
+                break;
+        }
+        modalTitle.textContent = `上传${categoryText}卖点数据`;
+    }
+    
+    // 更新上传说明
+    if (instructions) {
+        let instructionsHtml = '';
+        switch (currentHighlightCategory) {
+            case 'seating':
+                instructionsHtml = `
+                    <h3>坐具卖点Excel与图片上传说明：</h3>
+                    <ul>
+                        <li>第一列：产品名称</li>
+                        <li>第二列：父款型号</li>
+                        <li>第三列：产品分类（seating）</li>
+                        <li>第四列：卖点描述</li>
+                        <li>第五列：核心卖点（用逗号分隔）</li>
+                        <li>第六列：参考链接1（可选）</li>
+                        <li>第七列：参考链接2（可选）</li>
+                        <li>第八列：参考链接3（可选）</li>
+                        <li>第九列：图片文件名 或 图片URL（可选）</li>
+                        <li>第十列：面料材质（可选）</li>
+                        <li>第十一列：脚材质（可选）</li>
+                        <li>第十二列：海绵材质（可选）</li>
+                        <li>第十三列：框架材质（可选）</li>
+                        <li>第十四列：功能（可选）</li>
+                        <li>如使用本地图片，请与Excel一同选择相应图片文件；第九列填写文件名（如 <code>product1.jpg</code>），系统会自动匹配。</li>
+                    </ul>
+                `;
+                break;
+            case 'table':
+                instructionsHtml = `
+                    <h3>桌子卖点Excel与图片上传说明：</h3>
+                    <ul>
+                        <li>第一列：产品名称</li>
+                        <li>第二列：父款型号</li>
+                        <li>第三列：产品分类（table）</li>
+                        <li>第四列：卖点描述</li>
+                        <li>第五列：核心卖点（用逗号分隔）</li>
+                        <li>第六列：参考链接1（可选）</li>
+                        <li>第七列：参考链接2（可选）</li>
+                        <li>第八列：参考链接3（可选）</li>
+                        <li>第九列：图片文件名 或 图片URL（可选）</li>
+                        <li>第十列：面板材质（可选）</li>
+                        <li>第十一列：脚材质（可选）</li>
+                        <li>第十二列：适用人数（可选）</li>
+                        <li>第十三列：功能（可选）</li>
+                        <li>如使用本地图片，请与Excel一同选择相应图片文件；第九列填写文件名（如 <code>product1.jpg</code>），系统会自动匹配。</li>
+                    </ul>
+                `;
+                break;
+            default:
+                instructionsHtml = `
+                    <h3>产品卖点Excel与图片上传说明：</h3>
+                    <ul>
+                        <li>第一列：产品名称</li>
+                        <li>第二列：父款型号</li>
+                        <li>第三列：产品分类（seating、table）</li>
+                        <li>第四列：卖点描述</li>
+                        <li>第五列：核心卖点（用逗号分隔）</li>
+                        <li>第六列：参考链接1（可选）</li>
+                        <li>第七列：参考链接2（可选）</li>
+                        <li>第八列：参考链接3（可选）</li>
+                        <li>第九列：图片文件名 或 图片URL（可选）</li>
+                        <li>第十列：面料材质（仅坐具，可选）</li>
+                        <li>第十一列：脚材质（仅坐具，可选）</li>
+                        <li>第十二列：海绵材质（仅坐具，可选）</li>
+                        <li>第十三列：框架材质（仅坐具，可选）</li>
+                        <li>第十四列：面板材质（仅桌子，可选）</li>
+                        <li>第十五列：适用人数（仅桌子，可选）</li>
+                        <li>第十六列：功能（可选）</li>
+                        <li>如使用本地图片，请与Excel一同选择相应图片文件；第九列填写文件名（如 <code>product1.jpg</code>），系统会自动匹配。</li>
+                    </ul>
+                `;
+                break;
+        }
+        instructions.innerHTML = instructionsHtml;
+    }
 }
 
 // 处理产品卖点搜索
@@ -5574,6 +5737,9 @@ function showAddHighlightModal() {
     
     // 阻止背景页面滚动
     preventBodyScroll();
+    
+    // 根据当前分类更新模态框标题和预选分类
+    updateAddHighlightModalForCategory();
     
     // 确保材质选择框被填充
     populateMaterialSelects();
@@ -6127,6 +6293,9 @@ function showHighlightUploadModal() {
         modalContent.style.maxHeight = '80vh';
         modalContent.style.height = 'auto';
     }
+    
+    // 根据当前分类更新模态框标题和说明
+    updateHighlightUploadModalForCategory();
     
     // 阻止背景页面滚动
     preventBodyScroll();
@@ -7121,6 +7290,7 @@ function parseHighlightExcelData(data) {
     const spongeMaterialIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('海绵材质'));
     const frameMaterialIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('框架材质'));
     const panelMaterialIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('面板材质'));
+    const capacityIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('适用人数'));
     const functionIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('功能'));
     
     for (let i = 1; i < data.length; i++) {
@@ -7176,6 +7346,7 @@ function parseHighlightExcelData(data) {
         } else if (category === 'table') {
             highlight.panelMaterial = row[panelMaterialIndex]?.toString().trim() || '';
             highlight.legMaterial = row[legMaterialIndex]?.toString().trim() || '';
+            highlight.capacity = row[capacityIndex]?.toString().trim() || '';
             highlight.function = row[functionIndex]?.toString().trim() || '';
         }
         
