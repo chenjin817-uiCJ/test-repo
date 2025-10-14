@@ -465,8 +465,8 @@ function initializeApp() {
                 // 保留小图片的base64数据，清理过大的base64数据
                 fabrics = fabrics.map(item => {
                     if (item.imageUrl && item.imageUrl.startsWith('data:image/')) {
-                        // 如果base64数据过大（超过200KB），则清理
-                        if (item.imageUrl.length > 200 * 1024) {
+                        // 如果base64数据过大（超过2MB），则清理
+                        if (item.imageUrl.length > 2 * 1024 * 1024) {
                             console.log('清理过大的base64图片数据');
                             return { ...item, imageUrl: '' };
                         }
@@ -509,8 +509,8 @@ function initializeApp() {
                 // 保留小图片的base64数据，清理过大的base64数据
                 colorboards = colorboards.map(item => {
                     if (item.imageUrl && item.imageUrl.startsWith('data:image/')) {
-                        // 如果base64数据过大（超过200KB），则清理
-                        if (item.imageUrl.length > 200 * 1024) {
+                        // 如果base64数据过大（超过2MB），则清理
+                        if (item.imageUrl.length > 2 * 1024 * 1024) {
                             console.log('清理过大的base64图片数据');
                             return { ...item, imageUrl: '' };
                         }
@@ -1835,12 +1835,42 @@ function closeUploadModal() {
 
 // 显示新增模态框
 function showAddModal() {
-    document.getElementById('addModal').classList.add('show');
+    const modal = document.getElementById('addModal');
+    const modalContent = modal ? modal.querySelector('.modal-content') : null;
+    
+    modal.classList.add('show');
+    modal.style.display = 'flex';
+    modal.style.pointerEvents = 'auto';
+    
+    // 确保模态框内容可以滚动
+    if (modalContent) {
+        modalContent.style.overflowY = 'auto';
+        modalContent.style.maxHeight = '80vh';
+        modalContent.style.height = 'auto';
+    }
+    
+    // 阻止背景页面滚动
+    preventBodyScroll();
 }
 
 // 关闭新增模态框
 function closeAddModal() {
-    document.getElementById('addModal').classList.remove('show');
+    const modal = document.getElementById('addModal');
+    const modalContent = modal ? modal.querySelector('.modal-content') : null;
+    
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    modal.style.pointerEvents = '';
+    
+    // 清理样式
+    if (modalContent) {
+        modalContent.style.overflowY = '';
+        modalContent.style.maxHeight = '';
+        modalContent.style.height = '';
+    }
+    
+    // 恢复背景页面滚动
+    allowBodyScroll();
 }
 
 // 处理新增材质
@@ -2956,8 +2986,8 @@ function saveFabrics() {
                     console.log('清理失效的blob URL');
                     return { ...fabric, imageUrl: '' };
                 } else if (fabric.imageUrl.startsWith('data:image/')) {
-                    // 如果base64数据过大（超过200KB），则清理
-                    if (fabric.imageUrl.length > 200 * 1024) {
+                    // 如果base64数据过大（超过2MB），则清理
+                    if (fabric.imageUrl.length > 2 * 1024 * 1024) {
                         console.log('清理过大的base64图片数据以节省空间');
                         return { ...fabric, imageUrl: '' };
                     }
@@ -2998,8 +3028,8 @@ function saveColorboards() {
                     console.log('清理失效的blob URL');
                     return { ...colorboard, imageUrl: '' };
                 } else if (colorboard.imageUrl.startsWith('data:image/')) {
-                    // 如果base64数据过大（超过200KB），则清理
-                    if (colorboard.imageUrl.length > 200 * 1024) {
+                    // 如果base64数据过大（超过2MB），则清理
+                    if (colorboard.imageUrl.length > 2 * 1024 * 1024) {
                         console.log('清理过大的base64图片数据以节省空间');
                         return { ...colorboard, imageUrl: '' };
                     }
@@ -3354,7 +3384,7 @@ function showColorboardDetail(fabricId) {
         <div class="fabric-detail">
             <h3>面料信息</h3>
             ${fabric.colorCode ? `<p><strong>色板型号：</strong>${fabric.colorCode}</p>` : ''}
-            <p><strong>型号：</strong>${fabric.code}</p>
+            <p><strong>面料型号：</strong>${fabric.code}</p>
             <p><strong>平台：</strong>${getCategoryLabel(fabric.category)}</p>
             ${fabric.price ? `<p><strong>价格：</strong>${fabric.price} ${fabric.currency === 'CNY' ? '¥' : '$'}</p>` : ''}
             ${fabric.moq ? `<p><strong>MOQ：</strong>${fabric.moq}</p>` : ''}
@@ -3363,7 +3393,7 @@ function showColorboardDetail(fabricId) {
             ${fabric.composition ? `<p><strong>成分：</strong>${fabric.composition}</p>` : ''}
             ${fabric.weight ? `<p><strong>克重：</strong>${fabric.weight}</p>` : ''}
             ${fabric.width ? `<p><strong>门幅：</strong>${fabric.width}</p>` : ''}
-            ${fabric.color ? `<p><strong>颜色：</strong>${fabric.color}</p>` : ''}
+            ${fabric.color ? `<p><strong>面料颜色：</strong>${fabric.color}</p>` : ''}
         </div>
         
         <div class="detail-section">
@@ -3694,6 +3724,9 @@ function showFabricDetail(fabricId) {
     const fabric = fabrics.find(f => f.id === fabricId);
     if (!fabric) return;
     
+    console.log('显示面料详情:', fabric);
+    console.log('面料图片URL:', fabric.imageUrl);
+    
     const modal = document.getElementById('fabricModal');
     const title = document.getElementById('fabricModalTitle');
     const body = document.getElementById('fabricModalBody');
@@ -3708,8 +3741,8 @@ function showFabricDetail(fabricId) {
         <div class="fabric-detail">
             <h3>面料信息</h3>
             ${fabric.colorCode ? `<p><strong>色板型号：</strong>${fabric.colorCode}</p>` : ''}
-            <p><strong>型号：</strong>${fabric.code}</p>
-            ${fabric.color ? `<p><strong>颜色：</strong>${fabric.color}</p>` : ''}
+            <p><strong>面料型号：</strong>${fabric.code}</p>
+            ${fabric.color ? `<p><strong>面料颜色：</strong>${fabric.color}</p>` : ''}
         </div>
         
         <div class="modal-footer">
@@ -3962,6 +3995,26 @@ function showAddFabricModal() {
     attachColorCodeBlurValidation(document.getElementById('addFabricColorCode'));
 }
 
+// 关闭新增面料模态框
+function closeAddFabricModal() {
+    const modal = document.getElementById('addFabricModal');
+    const modalContent = modal ? modal.querySelector('.modal-content') : null;
+    
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    modal.style.pointerEvents = '';
+    
+    // 清理样式
+    if (modalContent) {
+        modalContent.style.overflowY = '';
+        modalContent.style.maxHeight = '';
+        modalContent.style.height = '';
+    }
+    
+    // 恢复背景页面滚动
+    allowBodyScroll();
+}
+
 // 显示编辑面料模态框
 function showEditFabricModal(fabricId) {
     const fabric = fabrics.find(f => f.id === fabricId);
@@ -4098,6 +4151,11 @@ function handleEditFabric(e) {
     }
 }
 
+// 获取下一个面料ID
+function getNextFabricId() {
+    return Date.now();
+}
+
 // 处理新增面料
 function handleAddFabric(e) {
     if (e) e.preventDefault();
@@ -4133,6 +4191,12 @@ function handleAddFabric(e) {
     // 重复校验（不区分大小写，去空格）
     const lower = code.toLowerCase();
     const exists = fabrics.some(f => (f.code || '').toString().trim().toLowerCase() === lower);
+    
+    if (exists) {
+        alert('面料型号已存在，请更换');
+        if (codeInput) codeInput.focus();
+        return;
+    }
 
     const finalizeAdd = (imageUrl) => {
         const newFabric = {
@@ -4142,6 +4206,7 @@ function handleAddFabric(e) {
             color,
             imageUrl
         };
+        console.log('新增面料数据:', newFabric);
         fabrics.push(newFabric);
         saveFabrics();
         closeAddFabricModal();
@@ -4166,10 +4231,17 @@ function handleAddFabric(e) {
     if (hasLocalImage) {
         const file = imgFileInput.files[0];
         const reader = new FileReader();
-        reader.onload = (ev) => finalizeAdd(ev.target.result);
-        reader.onerror = () => finalizeAdd('');
+        reader.onload = (ev) => {
+            console.log('本地图片读取成功，base64长度:', ev.target.result.length);
+            finalizeAdd(ev.target.result);
+        };
+        reader.onerror = (error) => {
+            console.error('本地图片读取失败:', error);
+            finalizeAdd('');
+        };
         reader.readAsDataURL(file);
     } else {
+        console.log('使用图片URL:', imageUrlText);
         finalizeAdd(imageUrlText);
     }
 }
@@ -4497,21 +4569,49 @@ function parseFabricExcelData(data) {
     const findIdx = (kwArr) => headers.findIndex(h => kwArr.some(k => h.toLowerCase().includes(k)));
 
     const idx = {
-        colorCode: findIdx(['色板', 'color']),  // 第一列：色板型号
-        code: findIdx(['面料', 'fabric', '型号']),  // 第二列：面料型号
+        colorCode: findIdx(['色板型号', '色板', 'color']),  // 第一列：色板型号
+        code: findIdx(['面料型号', '面料', 'fabric']),  // 第二列：面料型号
         color: findIdx(['面料颜色', '颜色', 'colour']),  // 第三列：面料颜色
-        image: findIdx(['图片', 'image', 'url'])  // 第四列：图片文件名或URL
+        image: findIdx(['图片文件名', '图片', 'image', 'url'])  // 第四列：图片文件名或URL
     };
+    
+    console.log('Excel列匹配结果:', idx);
+    console.log('Excel表头:', headers);
 
     // 遍历数据行
     for (let i = 1; i < data.length; i++) {
         const row = data[i] || [];
         const get = (index) => index >= 0 ? (row[index] !== undefined ? row[index].toString().trim() : '') : '';
 
+        console.log(`第${i+1}行原始数据:`, row);
+        console.log(`第${i+1}行各列数据:`, {
+            第0列: get(0),
+            第1列: get(1), 
+            第2列: get(2),
+            第3列: get(3)
+        });
+
         const colorCode = get(idx.colorCode);
         const code = get(idx.code);
         const color = get(idx.color);
         const imageCell = get(idx.image);
+        
+        console.log(`第${i+1}行解析结果:`, {
+            色板型号: colorCode,
+            面料型号: code,
+            面料颜色: color,
+            图片: imageCell,
+            列索引: idx
+        });
+        
+        console.log(`第${i+1}行详细解析:`, {
+            'idx.colorCode': idx.colorCode,
+            'idx.code': idx.code,
+            'get(idx.colorCode)': get(idx.colorCode),
+            'get(idx.code)': get(idx.code),
+            'row[idx.colorCode]': row[idx.colorCode],
+            'row[idx.code]': row[idx.code]
+        });
         
         // 检查必填字段
         if (!colorCode || !code || !color || !imageCell) {
