@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "外观设计",
+    "description": "产品外观相关的设计点",
+    "color": "#FF6B6B"
+  },
+  {
+    "id": 2,
+    "name": "功能设计",
+    "description": "产品功能相关的设计点",
+    "color": "#4ECDC4"
+  },
+  {
+    "id": 3,
+    "name": "材质工艺",
+    "description": "材质和工艺相关的设计点",
+    "color": "#45B7D1"
+  },
+  {
+    "id": 4,
+    "name": "人体工学",
+    "description": "人体工学相关的设计点",
+    "color": "#96CEB4"
+  },
+  {
+    "id": 5,
+    "name": "安全设计",
+    "description": "安全相关的设计点",
+    "color": "#FFEAA7"
+  }
+]

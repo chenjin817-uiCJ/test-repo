@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "category": "foam",
+    "name": "高密度海绵"
+  },
+  {
+    "id": 2,
+    "category": "foam",
+    "name": "海绵+羽绒"
+  },
+  {
+    "id": 3,
+    "category": "foam",
+    "name": "海绵+弹簧包"
+  },
+  {
+    "id": 4,
+    "category": "foam",
+    "name": "羽绒"
+  },
+  {
+    "id": 5,
+    "category": "foam",
+    "name": "海绵+鸭毛"
+  },
+  {
+    "id": 6,
+    "category": "fabric",
+    "name": "棉麻混纺"
+  },
+  {
+    "id": 7,
+    "category": "fabric",
+    "name": "真丝面料"
+  },
+  {
+    "id": 8,
+    "category": "wood",
+    "name": "橡木"
+  },
+  {
+    "id": 9,
+    "category": "wood",
+    "name": "胡桃木"
+  },
+  {
+    "id": 1760520803228,
+    "category": "wood",
+    "name": "多层板"
+  },
+  {
+    "id": 1760520775524,
+    "category": "wood",
+    "name": "橡胶木"
+  },
+  {
+    "id": 1760520752349,
+    "category": "fabric",
+    "name": "毛"
+  }
+]
