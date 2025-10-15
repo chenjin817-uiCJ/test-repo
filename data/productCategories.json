@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "休闲椅",
+    "value": "lounge_chair"
+  },
+  {
+    "id": 2,
+    "name": "长凳",
+    "value": "bench"
+  },
+  {
+    "id": 3,
+    "name": "沙发",
+    "value": "sofa"
+  },
+  {
+    "id": 4,
+    "name": "升降吧椅",
+    "value": "adjustable_bar_stool"
+  },
+  {
+    "id": 5,
+    "name": "桌子",
+    "value": "table"
+  },
+  {
+    "id": 6,
+    "name": "儿童椅",
+    "value": "children_chair"
+  }
+]

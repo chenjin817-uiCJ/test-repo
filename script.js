@@ -927,13 +927,17 @@ function setupEventListeners() {
     // 新增产品卖点表单提交（兜底）
     const addHighlightForm = document.getElementById('addHighlightForm');
     if (addHighlightForm) {
-        addHighlightForm.addEventListener('submit', handleAddHighlight);
+        addHighlightForm.addEventListener('submit', async (e) => {
+            await handleAddHighlight(e);
+        });
     }
 
         // 编辑产品卖点表单提交（兜底）
         const editHighlightForm = document.getElementById('editHighlightForm');
         if (editHighlightForm) {
-            editHighlightForm.addEventListener('submit', handleEditHighlight);
+            editHighlightForm.addEventListener('submit', async (e) => {
+                await handleEditHighlight(e);
+            });
         }
 
         // 设计点编辑表单提交
@@ -1052,7 +1056,7 @@ function setupEventListeners() {
                     }
                 }
             });
-        }
+    }
 
         // 设计点分类管理表单事件
         const addDesignPointCategoryForm = document.getElementById('addDesignPointCategoryForm');
@@ -1078,7 +1082,7 @@ function setupEventListeners() {
             editColorInput.addEventListener('change', function() {
                 updateColorPreview('editDesignPointCategoryColor', 'editDesignPointCategoryColorPreview');
             });
-        }
+    }
 
     // 本地图片选择与预览
     const imageFileInput = document.getElementById('addImageFile');
@@ -1275,13 +1279,17 @@ function renderMaterials() {
     
     noResults.style.display = 'none';
     
-    grid.innerHTML = list.map(material => `
+    grid.innerHTML = list.map(material => {
+        console.log(`渲染材质卡片 - ID: ${material.id}, 名称: ${material.name}, 图片URL: ${material.imageUrl}`);
+        return `
         <div class="material-card" onclick="showMaterialDetail(${material.id})">
             ${material.imageUrl ? `
                 <div class="material-thumb">
-                    <img src="${material.imageUrl}" alt="${material.name}" onerror="this.style.display='none'" />
+                    <img src="${material.imageUrl}" alt="${material.name}" 
+                         onerror="this.onerror=null; console.error('图片加载失败:', this.src); this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjhmOWZhIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD48L3N2Zz4='"
+                         onload="console.log('图片加载成功:', this.src)" />
                 </div>
-            ` : ''}
+            ` : '<div class="material-thumb"><div style="padding: 20px; text-align: center; color: #999; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; display: flex; align-items: center; justify-content: center; height: 120px;"><i class="fas fa-image" style="font-size: 24px; margin-right: 8px;"></i>无图片</div></div>'}
             <h3>${material.name}</h3>
             <div class="features">
                 ${material.features.slice(0, 4).map(feature => 
@@ -1292,7 +1300,8 @@ function renderMaterials() {
                 }
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 // 显示材质详情
@@ -2835,6 +2844,11 @@ function saveOptions() {
     try { localStorage.setItem('materialOptions_v1', JSON.stringify(materialOptions)); } catch (_) {}
 }
 
+// 兼容：供同步/导入流程调用的保存函数
+function saveMaterialOptions() {
+    try { localStorage.setItem('materialOptions_v1', JSON.stringify(materialOptions)); } catch (_) {}
+}
+
 // 渲染选项列表
 function renderOptions() {
     const grid = document.getElementById('optionsGrid');
@@ -3183,19 +3197,19 @@ function buildUploadedImageMap(imageFiles) {
         const noExt = lower.replace(/\.[a-z0-9]+$/, '');
         const compact = lower.replace(/\s+/g, '');
         
-        // 检查文件大小（限制为500KB）
-        if (img.size > 500 * 1024) {
-            console.warn(`图片 ${filename} 太大 (${(img.size/1024).toFixed(1)}KB)，将跳过`);
+        // 检查文件大小（限制为2MB）
+        if (img.size > 2 * 1024 * 1024) {
+            console.warn(`图片 ${filename} 太大 (${(img.size/1024/1024).toFixed(1)}MB)，将跳过`);
             resolve();
             return;
         }
         
         const r = new FileReader();
         r.onload = () => {
-            // 检查base64字符串长度（限制为300KB）
+            // 检查base64字符串长度（限制为2MB）
             const base64 = r.result;
-            if (base64.length > 300 * 1024) {
-                console.warn(`图片 ${filename} base64太大 (${(base64.length/1024).toFixed(1)}KB)，将跳过`);
+            if (base64.length > 2 * 1024 * 1024) {
+                console.warn(`图片 ${filename} base64太大 (${(base64.length/1024/1024).toFixed(1)}MB)，将跳过`);
                 resolve();
                 return;
             }
@@ -3264,9 +3278,13 @@ function saveFabrics() {
     } catch (error) {
         console.error('保存面料数据失败:', error);
         if (error.name === 'QuotaExceededError') {
-            alert('存储空间不足！请尝试以下解决方案：\n1. 清除浏览器缓存\n2. 减少上传的图片数量\n3. 使用网络图片URL而不是本地图片文件');
-            // 尝试清理一些数据
-            clearOldImageData();
+            // 显示更友好的错误提示
+            const shouldClear = confirm('存储空间不足！\n\n是否要自动清理存储空间？\n\n点击"确定"清理本地数据，点击"取消"手动清理浏览器缓存。');
+            if (shouldClear) {
+                clearStorageData();
+            } else {
+                alert('请手动清理浏览器缓存：\n1. 按 Ctrl+Shift+Delete\n2. 选择"全部时间"\n3. 勾选所有选项\n4. 点击"清除数据"');
+            }
         }
     }
     // 更新色板型号选择框
@@ -5378,7 +5396,7 @@ function isChildrenChairCategory(category) {
 function getHighlightCategoryLabel(category, subcategory = '') {
     // 坐具子分类直接显示名称
     if (isSeatingCategory(category)) {
-        const labels = {
+    const labels = {
             'lounge_chair': '休闲椅',
             'bench': '长凳',
             'sofa': '沙发',
@@ -5514,7 +5532,9 @@ function populateMaterialSelects() {
     // 填充面料材质选择框
     const fabricSelects = [
         'addHighlightFabricMaterial',
-        'editHighlightFabricMaterial'
+        'editHighlightFabricMaterial',
+        'addHighlightChildrenChairFabricMaterial',
+        'editHighlightChildrenChairFabricMaterial'
     ];
     fabricSelects.forEach(selectId => {
         const select = document.getElementById(selectId);
@@ -5533,7 +5553,9 @@ function populateMaterialSelects() {
     // 填充海绵材质选择框
     const foamSelects = [
         'addHighlightSpongeMaterial',
-        'editHighlightSpongeMaterial'
+        'editHighlightSpongeMaterial',
+        'addHighlightChildrenChairSpongeMaterial',
+        'editHighlightChildrenChairSpongeMaterial'
     ];
     foamSelects.forEach(selectId => {
         const select = document.getElementById(selectId);
@@ -5551,7 +5573,9 @@ function populateMaterialSelects() {
     // 填充脚材质选择框
     const legSelects = [
         'addHighlightLegMaterial',
-        'editHighlightLegMaterial'
+        'editHighlightLegMaterial',
+        'addHighlightChildrenChairLegMaterial',
+        'editHighlightChildrenChairLegMaterial'
     ];
     legSelects.forEach(selectId => {
         const select = document.getElementById(selectId);
@@ -5569,7 +5593,9 @@ function populateMaterialSelects() {
     // 填充框架材质选择框
     const frameSelects = [
         'addHighlightFrameMaterial',
-        'editHighlightFrameMaterial'
+        'editHighlightFrameMaterial',
+        'addHighlightChildrenChairFrameMaterial',
+        'editHighlightChildrenChairFrameMaterial'
     ];
     frameSelects.forEach(selectId => {
         const select = document.getElementById(selectId);
@@ -5601,6 +5627,16 @@ function populateMaterialSelects() {
             });
         }
     });
+}
+
+// 兼容：某些流程会调用该函数来刷新面料相关下拉框
+// 实际逻辑与 populateMaterialSelects 一致，这里做别名以避免找不到函数
+function populateFabricSelects() {
+    try {
+        populateMaterialSelects();
+    } catch (e) {
+        console.warn('populateFabricSelects 调用失败:', e);
+    }
 }
 
 // 查找匹配的材质
@@ -5897,7 +5933,7 @@ function applyHighlightFilters() {
             filtered = filtered.filter(h => isChildrenChairCategory(h.category));
         } else {
             // 其他分类：直接匹配
-            filtered = filtered.filter(h => h.category === highlightCategoryFilter);
+        filtered = filtered.filter(h => h.category === highlightCategoryFilter);
         }
     }
     
@@ -6299,7 +6335,7 @@ function closeEditHighlightModal() {
 }
 
 // 处理新增产品卖点
-function handleAddHighlight(e) {
+async function handleAddHighlight(e) {
     if (e) e.preventDefault();
     const nameInput = document.getElementById('addHighlightName');
     const parentModelInput = document.getElementById('addHighlightParentModel');
@@ -6364,19 +6400,32 @@ function handleAddHighlight(e) {
         const sceneImages = getSceneImagesFromForm('add');
         
         // 处理场景图的本地图片
-        const processedSceneImages = sceneImages.map(si => {
+        const processedSceneImages = [];
+        for (const si of sceneImages) {
             if (si.hasLocalImage && si.localImageFile) {
                 // 将本地图片转换为base64
                 const reader = new FileReader();
-                reader.readAsDataURL(si.localImageFile);
-                // 这里简化处理，实际应该用Promise处理异步
-                // 暂时先保存URL，后续可以改进
-            }
-            return {
+                reader.onload = function(e) {
+                    processedSceneImages.push({
                 id: si.id,
-                imageUrl: si.imageUrl
-            };
-        });
+                        imageUrl: e.target.result
+                    });
+                };
+                reader.onerror = function() {
+                    console.error('场景图读取失败');
+                    processedSceneImages.push({
+                        id: si.id,
+                        imageUrl: si.imageUrl || ''
+                    });
+                };
+                reader.readAsDataURL(si.localImageFile);
+            } else {
+                processedSceneImages.push({
+                    id: si.id,
+                    imageUrl: si.imageUrl || ''
+                });
+            }
+        }
         
         // 构建基础产品信息
         const newHighlight = {
@@ -6498,7 +6547,7 @@ function handleAddHighlight(e) {
 }
 
 // 处理编辑产品卖点
-function handleEditHighlight(e) {
+async function handleEditHighlight(e) {
     if (e) e.preventDefault();
     const idInput = document.getElementById('editHighlightId');
     // 产品名称输入框已移除
@@ -6563,19 +6612,32 @@ function handleEditHighlight(e) {
         const sceneImages = getSceneImagesFromForm('edit');
         
         // 处理场景图的本地图片
-        const processedSceneImages = sceneImages.map(si => {
+        const processedSceneImages = [];
+        for (const si of sceneImages) {
             if (si.hasLocalImage && si.localImageFile) {
                 // 将本地图片转换为base64
                 const reader = new FileReader();
-                reader.readAsDataURL(si.localImageFile);
-                // 这里简化处理，实际应该用Promise处理异步
-                // 暂时先保存URL，后续可以改进
-            }
-            return {
+                reader.onload = function(e) {
+                    processedSceneImages.push({
                 id: si.id,
-                imageUrl: si.imageUrl
-            };
-        });
+                        imageUrl: e.target.result
+                    });
+                };
+                reader.onerror = function() {
+                    console.error('场景图读取失败');
+                    processedSceneImages.push({
+                        id: si.id,
+                        imageUrl: si.imageUrl || ''
+                    });
+                };
+                reader.readAsDataURL(si.localImageFile);
+            } else {
+                processedSceneImages.push({
+                    id: si.id,
+                    imageUrl: si.imageUrl || ''
+                });
+            }
+        }
         
         // 更新产品卖点数据
         const highlightIndex = highlights.findIndex(h => h.id === id);
@@ -8234,8 +8296,8 @@ async function convertHighlightImagesToBase64() {
                 
                 // 转换为base64
                 return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
                         highlight.imageUrl = e.target.result; // 更新为base64
                         resolve();
                     };
@@ -9509,3 +9571,882 @@ function renderColorboardWithResize() {
     renderColorboard();
     setTimeout(initTableResize, 100);
 }
+
+// ==================== 数据同步功能 ====================
+
+// 全局同步变量
+let autoSyncEnabled = false;
+let syncInterval = null;
+let lastSyncTime = null;
+
+// 显示数据同步模态框
+function showDataSyncModal() {
+    const modal = document.getElementById('dataSyncModal');
+    modal.classList.add('show');
+    modal.style.display = 'flex';
+    modal.style.pointerEvents = 'auto';
+    
+    // 阻止背景页面滚动
+    preventBodyScroll();
+    
+    // 更新数据统计
+    updateDataStats();
+    
+    // 检查同步状态
+    checkSyncStatus();
+}
+
+// 关闭数据同步模态框
+function closeDataSyncModal() {
+    const modal = document.getElementById('dataSyncModal');
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    modal.style.pointerEvents = '';
+    
+    // 恢复背景页面滚动
+    allowBodyScroll();
+}
+
+// 更新数据统计
+function updateDataStats() {
+    document.getElementById('fabricCount').textContent = fabrics.length;
+    document.getElementById('colorboardCount').textContent = colorboards.length;
+    document.getElementById('highlightCount').textContent = highlights.length;
+    document.getElementById('materialCount').textContent = materials.length;
+}
+
+// 导出所有数据
+function exportAllData() {
+    try {
+        const exportData = {
+            version: '1.0',
+            exportTime: new Date().toISOString(),
+            data: {
+                fabrics: fabrics,
+                colorboards: colorboards,
+                highlights: highlights,
+                materials: materials,
+                materialOptions: materialOptions,
+                designPointCategories: designPointCategories,
+                productCategories: productCategories
+            }
+        };
+        
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `家具卖点字典数据_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        alert('数据导出成功！');
+    } catch (error) {
+        console.error('导出数据失败:', error);
+        alert('导出数据失败，请重试');
+    }
+}
+
+// 处理数据导入
+function handleImportData() {
+    const fileInput = document.getElementById('importDataFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('请选择要导入的数据文件');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importData = JSON.parse(e.target.result);
+            
+            if (!importData.data) {
+                alert('数据文件格式不正确');
+                return;
+            }
+            
+            const mergeData = document.getElementById('mergeData').checked;
+            const overwriteData = document.getElementById('overwriteData').checked;
+            
+            if (overwriteData) {
+                // 覆盖模式
+                if (confirm('确定要覆盖所有现有数据吗？此操作不可撤销！')) {
+                    importAllData(importData.data, true);
+                }
+            } else if (mergeData) {
+                // 合并模式
+                importAllData(importData.data, false);
+            } else {
+                alert('请选择导入模式：合并数据或覆盖数据');
+                return;
+            }
+            
+            // 清空文件输入
+            fileInput.value = '';
+            
+        } catch (error) {
+            console.error('解析数据文件失败:', error);
+            alert('数据文件格式错误，请检查文件是否正确');
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+// 导入所有数据
+function importAllData(importData, overwrite = false) {
+    try {
+        let importedCount = 0;
+        let updatedCount = 0;
+        
+        // 导入面料数据
+        if (importData.fabrics) {
+            const result = importDataArray(fabrics, importData.fabrics, 'fabricCode', overwrite);
+            importedCount += result.imported;
+            updatedCount += result.updated;
+        }
+        
+        // 导入色板数据
+        if (importData.colorboards) {
+            const result = importDataArray(colorboards, importData.colorboards, 'colorCode', overwrite);
+            importedCount += result.imported;
+            updatedCount += result.updated;
+        }
+        
+        // 导入产品卖点数据
+        if (importData.highlights) {
+            const result = importDataArray(highlights, importData.highlights, 'id', overwrite);
+            importedCount += result.imported;
+            updatedCount += result.updated;
+        }
+        
+        // 导入材质数据
+        if (importData.materials) {
+            const result = importDataArray(materials, importData.materials, 'id', overwrite);
+            importedCount += result.imported;
+            updatedCount += result.updated;
+        }
+        
+        // 导入材质选项数据
+        if (importData.materialOptions) {
+            if (overwrite) {
+                materialOptions = [...importData.materialOptions];
+            } else {
+                importData.materialOptions.forEach(option => {
+                    if (!materialOptions.find(opt => opt.name === option.name && opt.category === option.category)) {
+                        materialOptions.push(option);
+                    }
+                });
+            }
+        }
+        
+        // 导入设计点分类数据
+        if (importData.designPointCategories) {
+            if (overwrite) {
+                designPointCategories = [...importData.designPointCategories];
+            } else {
+                importData.designPointCategories.forEach(category => {
+                    if (!designPointCategories.find(cat => cat.id === category.id)) {
+                        designPointCategories.push(category);
+                    }
+                });
+            }
+        }
+        
+        // 导入产品分类数据
+        if (importData.productCategories) {
+            if (overwrite) {
+                productCategories = [...importData.productCategories];
+            } else {
+                importData.productCategories.forEach(category => {
+                    if (!productCategories.find(cat => cat.id === category.id)) {
+                        productCategories.push(category);
+                    }
+                });
+            }
+        }
+        
+        // 保存所有数据
+        saveFabrics();
+        saveColorboards();
+        saveHighlights();
+        saveMaterials();
+        saveMaterialOptions();
+        saveDesignPointCategories();
+        saveProductCategories();
+        
+        // 更新显示
+        renderMaterials();
+        renderFabrics();
+        renderColorboard();
+        renderHighlights();
+        updateDataStats();
+        
+        // 更新材质选择框
+        populateMaterialSelects();
+        populateFabricSelects();
+        populateColorCodeSelects();
+        updateProductCategorySelectors();
+        
+        alert(`数据导入完成！\n新增：${importedCount} 条\n更新：${updatedCount} 条`);
+        
+    } catch (error) {
+        console.error('导入数据失败:', error);
+        alert('导入数据失败，请重试');
+    }
+}
+
+// 导入数据数组的通用函数
+function importDataArray(targetArray, sourceArray, uniqueKey, overwrite = false) {
+    let imported = 0;
+    let updated = 0;
+    
+    if (overwrite) {
+        // 覆盖模式：清空现有数据，添加新数据
+        targetArray.length = 0;
+        targetArray.push(...sourceArray);
+        imported = sourceArray.length;
+    } else {
+        // 合并模式：保留现有数据，添加新数据或更新现有数据
+        sourceArray.forEach(sourceItem => {
+            const existingIndex = targetArray.findIndex(item => item[uniqueKey] === sourceItem[uniqueKey]);
+            
+            if (existingIndex >= 0) {
+                // 检查数据是否真的有变化
+                const existingItem = targetArray[existingIndex];
+                
+                // 深度比较对象，忽略可能的顺序差异
+                const hasChanges = !deepEqual(existingItem, sourceItem);
+                
+                if (hasChanges) {
+                    // 只有数据真正有变化时才更新
+                    targetArray[existingIndex] = { ...existingItem, ...sourceItem };
+                    updated++;
+                    console.log(`数据更新: ${uniqueKey}=${sourceItem[uniqueKey]}`);
+                }
+                // 如果数据相同，不进行任何操作，不增加计数
+            } else {
+                // 添加新数据
+                targetArray.push(sourceItem);
+                imported++;
+                console.log(`数据新增: ${uniqueKey}=${sourceItem[uniqueKey]}`);
+            }
+        });
+    }
+    
+    return { imported, updated };
+}
+
+// 深度比较两个对象是否相等
+function deepEqual(obj1, obj2) {
+    if (obj1 === obj2) return true;
+    
+    if (obj1 == null || obj2 == null) return obj1 === obj2;
+    
+    if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return obj1 === obj2;
+    
+    const keys1 = Object.keys(obj1);
+    const keys2 = Object.keys(obj2);
+    
+    if (keys1.length !== keys2.length) return false;
+    
+    for (let key of keys1) {
+        if (!keys2.includes(key)) return false;
+        if (!deepEqual(obj1[key], obj2[key])) return false;
+    }
+    
+    return true;
+}
+
+// ==================== 实时同步功能 ====================
+
+// 获取服务器地址
+function getSyncServerUrl() {
+    const urlInput = document.getElementById('syncServerUrl');
+    return urlInput ? urlInput.value.trim() : '';
+}
+
+// 更新同步状态显示
+function updateSyncStatus(status, message) {
+    const statusElement = document.getElementById('syncStatus');
+    if (!statusElement) return;
+    
+    const indicator = statusElement.querySelector('.status-indicator');
+    const text = statusElement.querySelector('.status-text');
+    
+    // 移除所有状态类
+    indicator.classList.remove('online', 'offline', 'syncing');
+    
+    // 添加新状态类
+    indicator.classList.add(status);
+    text.textContent = message;
+}
+
+// 显示同步通知
+function showSyncNotification(message, type = 'success') {
+    // 移除现有通知
+    const existingNotification = document.querySelector('.sync-notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    // 创建新通知
+    const notification = document.createElement('div');
+    notification.className = `sync-notification ${type}`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // 显示通知
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    
+    // 自动隐藏
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 300);
+    }, 3000);
+}
+
+// 检查服务器连接状态
+async function checkSyncStatus() {
+    const serverUrl = getSyncServerUrl();
+    if (!serverUrl) {
+        updateSyncStatus('offline', '未设置服务器地址');
+        return false;
+    }
+    
+    try {
+        updateSyncStatus('syncing', '检查连接中...');
+        console.log('正在检查服务器连接:', serverUrl);
+        
+        // 使用AbortController实现超时控制
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+        
+        const response = await fetch(`${serverUrl}/api/status`, {
+            method: 'GET',
+            signal: controller.signal,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log('服务器响应状态:', response.status);
+        console.log('服务器响应头:', response.headers);
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('服务器响应数据:', data);
+            updateSyncStatus('online', `已连接 - ${data.server}`);
+            return true;
+        } else {
+            const errorText = await response.text();
+            console.error('服务器响应错误:', response.status, errorText);
+            updateSyncStatus('offline', `服务器响应错误: ${response.status}`);
+            return false;
+        }
+    } catch (error) {
+        console.error('检查服务器状态失败:', error);
+        
+        let errorMessage = '连接失败';
+        if (error.name === 'AbortError') {
+            errorMessage = '连接超时';
+        } else if (error.message.includes('Failed to fetch')) {
+            errorMessage = '无法连接到服务器，请检查服务器是否启动';
+        } else if (error.message.includes('CORS')) {
+            errorMessage = '跨域请求被阻止';
+        } else {
+            errorMessage = `连接失败: ${error.message}`;
+        }
+        
+        updateSyncStatus('offline', errorMessage);
+        return false;
+    }
+}
+
+// 从服务器下载数据
+async function downloadFromServer() {
+    const serverUrl = getSyncServerUrl();
+    if (!serverUrl) {
+        showSyncNotification('请先设置服务器地址', 'error');
+        return false;
+    }
+    
+    try {
+        updateSyncStatus('syncing', '下载数据中...');
+        
+        const response = await fetch(`${serverUrl}/api/data`, {
+            method: 'GET',
+            timeout: 10000
+        });
+        
+        if (!response.ok) {
+            throw new Error(`服务器响应错误: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error || '服务器返回错误');
+        }
+        
+        // 合并数据到本地
+        const serverData = result.data;
+        let importedCount = 0;
+        let updatedCount = 0;
+        
+        // 合并各种数据
+        if (serverData.fabrics) {
+            const result = importDataArray(fabrics, serverData.fabrics, 'fabricCode', false);
+            importedCount += result.imported;
+            updatedCount += result.updated;
+        }
+        
+        if (serverData.colorboards) {
+            const result = importDataArray(colorboards, serverData.colorboards, 'colorCode', false);
+            importedCount += result.imported;
+            updatedCount += result.updated;
+        }
+        
+        if (serverData.highlights) {
+            const result = importDataArray(highlights, serverData.highlights, 'id', false);
+            importedCount += result.imported;
+            updatedCount += result.updated;
+        }
+        
+        if (serverData.materials) {
+            const result = importDataArray(materials, serverData.materials, 'id', false);
+            importedCount += result.imported;
+            updatedCount += result.updated;
+        }
+        
+        if (serverData.materialOptions) {
+            serverData.materialOptions.forEach(option => {
+                if (!materialOptions.find(opt => opt.name === option.name && opt.category === option.category)) {
+                    materialOptions.push(option);
+                    importedCount++;
+                }
+            });
+        }
+        
+        if (serverData.designPointCategories) {
+            serverData.designPointCategories.forEach(category => {
+                if (!designPointCategories.find(cat => cat.id === category.id)) {
+                    designPointCategories.push(category);
+                    importedCount++;
+                }
+            });
+        }
+        
+        if (serverData.productCategories) {
+            serverData.productCategories.forEach(category => {
+                if (!productCategories.find(cat => cat.id === category.id)) {
+                    productCategories.push(category);
+                    importedCount++;
+                }
+            });
+        }
+        
+        // 保存到本地存储
+        saveFabrics();
+        saveColorboards();
+        saveHighlights();
+        saveMaterials();
+        saveMaterialOptions();
+        saveDesignPointCategories();
+        saveProductCategories();
+        
+        // 更新显示
+        renderMaterials();
+        renderFabrics();
+        renderColorboard();
+        renderHighlights();
+        updateDataStats();
+        
+        // 更新选择框
+        populateMaterialSelects();
+        populateFabricSelects();
+        populateColorCodeSelects();
+        updateProductCategorySelectors();
+        
+        lastSyncTime = new Date();
+        updateSyncStatus('online', '同步完成');
+        
+        // 下载数据完成，不显示提醒（自动同步应该静默运行）
+        console.log('下载数据完成 - 新增:', importedCount, '更新:', updatedCount);
+        
+        // 只有在有实际数据变化时才在控制台记录详细信息
+        if (importedCount > 0 || updatedCount > 0) {
+            console.log(`数据同步完成：新增${importedCount}条，更新${updatedCount}条`);
+        } else {
+            console.log('数据已是最新，无需同步');
+        }
+        
+        return true;
+        
+    } catch (error) {
+        console.error('从服务器下载数据失败:', error);
+        updateSyncStatus('offline', '下载失败');
+        showSyncNotification(`下载失败: ${error.message}`, 'error');
+        return false;
+    }
+}
+
+// 上传数据到服务器
+async function uploadToServer(silent = false) {
+    const serverUrl = getSyncServerUrl();
+    if (!serverUrl) {
+        showSyncNotification('请先设置服务器地址', 'error');
+        return false;
+    }
+    
+    try {
+        updateSyncStatus('syncing', '上传数据中...');
+        
+        const dataToUpload = {
+            fabrics: fabrics,
+            colorboards: colorboards,
+            highlights: highlights,
+            materials: materials,
+            materialOptions: materialOptions,
+            designPointCategories: designPointCategories,
+            productCategories: productCategories
+        };
+        
+        // 记录上传的数据统计
+        const uploadStats = {
+            fabrics: dataToUpload.fabrics.length,
+            colorboards: dataToUpload.colorboards.length,
+            highlights: dataToUpload.highlights.length,
+            materials: dataToUpload.materials.length,
+            materialOptions: dataToUpload.materialOptions.length,
+            designPointCategories: dataToUpload.designPointCategories.length,
+            productCategories: dataToUpload.productCategories.length
+        };
+        
+        console.log('准备上传的数据统计:', uploadStats);
+        
+        const response = await fetch(`${serverUrl}/api/data`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ data: dataToUpload }),
+            timeout: 15000
+        });
+        
+        if (!response.ok) {
+            throw new Error(`服务器响应错误: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error || '服务器返回错误');
+        }
+        
+        console.log('服务器响应:', result);
+        
+        lastSyncTime = new Date();
+        updateSyncStatus('online', '上传完成');
+        
+        // 检查是否有实际的数据变化
+        if (result.data && result.data.updated) {
+            const updatedCount = (result.data.updated.fabrics || 0) + (result.data.updated.colorboards || 0) + 
+                               (result.data.updated.highlights || 0) + (result.data.updated.materials || 0) + 
+                               (result.data.updated.materialOptions || 0) + (result.data.updated.designPointCategories || 0) + 
+                               (result.data.updated.productCategories || 0);
+            
+            console.log('服务器返回的更新统计:', result.data.updated);
+            console.log('总更新数量:', updatedCount);
+            
+            if (updatedCount > 0) {
+                if (!silent) {
+                    showSyncNotification(`数据上传成功！更新了${updatedCount}条数据`);
+                }
+            } else {
+                if (!silent) {
+                    showSyncNotification('数据已是最新，无需上传', 'info');
+                }
+                console.log('数据已是最新，无需上传');
+            }
+        } else {
+            // 如果没有服务器响应信息，根据本地数据判断
+            const totalDataCount = uploadStats.fabrics + uploadStats.colorboards + uploadStats.highlights + 
+                                  uploadStats.materials + uploadStats.materialOptions + 
+                                  uploadStats.designPointCategories + uploadStats.productCategories;
+            
+            if (!silent) {
+                if (totalDataCount > 0) {
+                    showSyncNotification(`数据上传成功！上传了${totalDataCount}条数据`);
+                } else {
+                    showSyncNotification('没有数据需要上传', 'info');
+                }
+            }
+            console.log('数据上传完成，总数据量:', totalDataCount);
+        }
+        
+        return true;
+        
+    } catch (error) {
+        console.error('上传数据到服务器失败:', error);
+        updateSyncStatus('offline', '上传失败');
+        showSyncNotification(`上传失败: ${error.message}`, 'error');
+        return false;
+    }
+}
+
+// 手动同步
+async function manualSync() {
+    try {
+        updateSyncStatus('syncing', '开始双向同步...');
+        
+        // 先下载服务器数据
+        const downloadSuccess = await downloadFromServer();
+        if (!downloadSuccess) {
+            showSyncNotification('下载服务器数据失败', 'error');
+            return;
+        }
+        
+        // 再上传本地数据到服务器
+        const uploadSuccess = await uploadToServer(true); // 静默模式，不显示提醒
+        if (!uploadSuccess) {
+            showSyncNotification('上传本地数据失败', 'error');
+            return;
+        }
+        
+        // 双向同步完成
+        updateSyncStatus('online', '双向同步完成');
+        
+        // 双向同步完成，不显示具体提醒，让用户通过状态栏了解同步状态
+        console.log('双向同步完成');
+        
+    } catch (error) {
+        console.error('手动同步失败:', error);
+        updateSyncStatus('offline', '同步失败');
+        showSyncNotification(`同步失败: ${error.message}`, 'error');
+    }
+}
+
+// 启用自动同步
+async function enableAutoSync() {
+    if (autoSyncEnabled) {
+        // 如果已经启用，则禁用
+        disableAutoSync();
+        return;
+    }
+    
+    // 先检查服务器连接
+    const isConnected = await checkSyncStatus();
+    if (!isConnected) {
+        showSyncNotification('无法连接到服务器，请检查服务器地址', 'error');
+        return;
+    }
+    
+    // 执行初始同步
+    await manualSync();
+    
+    // 启用自动同步
+    autoSyncEnabled = true;
+    syncInterval = setInterval(async () => {
+        try {
+            // 自动同步也是双向的：先下载，再上传
+            const downloadSuccess = await downloadFromServer();
+            if (downloadSuccess) {
+                await uploadToServer(true); // 静默模式，不显示提醒
+            }
+        } catch (error) {
+            console.error('自动同步失败:', error);
+        }
+    }, 30000); // 每30秒同步一次
+    
+    updateSyncStatus('online', '自动同步已启用');
+    showSyncNotification('自动同步已启用，每30秒同步一次', 'success');
+    
+    // 更新按钮文本
+    const button = document.querySelector('button[onclick="enableAutoSync()"]');
+    if (button) {
+        button.innerHTML = '<i class="fas fa-stop"></i> 禁用自动同步';
+    }
+}
+
+// 禁用自动同步
+function disableAutoSync() {
+    autoSyncEnabled = false;
+    if (syncInterval) {
+        clearInterval(syncInterval);
+        syncInterval = null;
+    }
+    
+    updateSyncStatus('offline', '自动同步已禁用');
+    showSyncNotification('自动同步已禁用', 'warning');
+    
+    // 更新按钮文本
+    const button = document.querySelector('button[onclick="enableAutoSync()"]');
+    if (button) {
+        button.innerHTML = '<i class="fas fa-sync"></i> 启用自动同步';
+    }
+}
+
+// 测试连接
+async function testConnection() {
+    const serverUrl = getSyncServerUrl();
+    if (!serverUrl) {
+        showSyncNotification('请先设置服务器地址', 'error');
+        return;
+    }
+    
+    console.log('开始测试连接:', serverUrl);
+    showSyncNotification('正在测试连接...', 'warning');
+    
+    const isConnected = await checkSyncStatus();
+    if (isConnected) {
+        showSyncNotification('连接测试成功！', 'success');
+    } else {
+        showSyncNotification('连接测试失败，请检查服务器地址和网络', 'error');
+    }
+}
+
+// 手动上传到服务器（显示提醒）
+async function manualUploadToServer() {
+    try {
+        updateSyncStatus('syncing', '上传数据中...');
+        const success = await uploadToServer(false); // 非静默模式，显示提醒
+        if (success) {
+            updateSyncStatus('online', '上传完成');
+            console.log('手动上传完成');
+        } else {
+            updateSyncStatus('offline', '上传失败');
+        }
+    } catch (error) {
+        console.error('手动上传失败:', error);
+        updateSyncStatus('offline', '上传失败');
+        showSyncNotification(`上传失败: ${error.message}`, 'error');
+    }
+}
+
+// 检查服务器数据
+async function checkServerData() {
+    const serverUrl = getSyncServerUrl();
+    if (!serverUrl) {
+        showSyncNotification('请先设置服务器地址', 'error');
+        return;
+    }
+    
+    try {
+        updateSyncStatus('syncing', '检查服务器数据中...');
+        showSyncNotification('正在检查服务器数据...', 'warning');
+        
+        const response = await fetch(`${serverUrl}/api/data`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`服务器响应错误: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error || '服务器返回错误');
+        }
+        
+        const serverData = result.data;
+        const dataInfo = {
+            fabrics: serverData.fabrics ? serverData.fabrics.length : 0,
+            colorboards: serverData.colorboards ? serverData.colorboards.length : 0,
+            highlights: serverData.highlights ? serverData.highlights.length : 0,
+            materials: serverData.materials ? serverData.materials.length : 0,
+            materialOptions: serverData.materialOptions ? serverData.materialOptions.length : 0,
+            designPointCategories: serverData.designPointCategories ? serverData.designPointCategories.length : 0,
+            productCategories: serverData.productCategories ? serverData.productCategories.length : 0
+        };
+        
+        console.log('服务器数据统计:', dataInfo);
+        
+        // 显示服务器数据统计
+        const message = `服务器数据统计：
+面料: ${dataInfo.fabrics}条
+色板: ${dataInfo.colorboards}条
+产品卖点: ${dataInfo.highlights}条
+材质: ${dataInfo.materials}条
+材质选项: ${dataInfo.materialOptions}条
+设计点分类: ${dataInfo.designPointCategories}条
+产品分类: ${dataInfo.productCategories}条`;
+        
+        alert(message);
+        
+        updateSyncStatus('online', '服务器数据检查完成');
+        showSyncNotification('服务器数据检查完成', 'success');
+        
+    } catch (error) {
+        console.error('检查服务器数据失败:', error);
+        updateSyncStatus('offline', '检查失败');
+        showSyncNotification(`检查服务器数据失败: ${error.message}`, 'error');
+    }
+}
+
+// 清理存储空间
+function clearStorageData() {
+    if (!confirm('确定要清理存储空间吗？这将删除所有本地数据，但不会影响服务器数据。')) {
+        return;
+    }
+    
+    try {
+        // 清理所有本地存储数据
+        const keysToRemove = [
+            'materials_v1',
+            'fabrics_v1', 
+            'colorboards_v1',
+            'highlights_v1',
+            'materialOptions_v1',
+            'designPointCategories_v1',
+            'productCategories_v1'
+        ];
+        
+        let clearedCount = 0;
+        keysToRemove.forEach(key => {
+            if (localStorage.getItem(key)) {
+                localStorage.removeItem(key);
+                clearedCount++;
+            }
+        });
+        
+        // 重新初始化数据
+        initializeApp();
+        
+        // 更新显示
+        renderMaterials();
+        renderFabrics();
+        renderColorboard();
+        renderHighlights();
+        updateDataStats();
+        
+        showSyncNotification(`存储空间清理完成！清理了${clearedCount}个数据项`, 'success');
+        
+    } catch (error) {
+        console.error('清理存储空间失败:', error);
+        showSyncNotification('清理存储空间失败', 'error');
+    }
+}
+
+// 页面卸载时禁用自动同步
+window.addEventListener('beforeunload', () => {
+    if (autoSyncEnabled) {
+        disableAutoSync();
+    }
+});

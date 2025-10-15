@@ -1,0 +1,16 @@
+{
+  "name": "selling-points-dictionary",
+  "version": "1.0.0",
+  "description": "产品卖点字典管理系统",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "keywords": ["product", "selling-points", "dictionary", "management"],
+  "author": "Your Company",
+  "license": "MIT"
+}
