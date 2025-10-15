@@ -1275,13 +1275,17 @@ function renderMaterials() {
     
     noResults.style.display = 'none';
     
-    grid.innerHTML = list.map(material => `
+    grid.innerHTML = list.map(material => {
+        console.log(`渲染材质卡片 - ID: ${material.id}, 名称: ${material.name}, 图片URL: ${material.imageUrl}`);
+        return `
         <div class="material-card" onclick="showMaterialDetail(${material.id})">
             ${material.imageUrl ? `
                 <div class="material-thumb">
-                    <img src="${material.imageUrl}" alt="${material.name}" onerror="this.style.display='none'" />
+                    <img src="${material.imageUrl}" alt="${material.name}" 
+                         onerror="this.onerror=null; console.error('图片加载失败:', this.src); this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjhmOWZhIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD48L3N2Zz4='"
+                         onload="console.log('图片加载成功:', this.src)" />
                 </div>
-            ` : ''}
+            ` : '<div class="material-thumb"><div style="padding: 20px; text-align: center; color: #999; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; display: flex; align-items: center; justify-content: center; height: 120px;"><i class="fas fa-image" style="font-size: 24px; margin-right: 8px;"></i>无图片</div></div>'}
             <h3>${material.name}</h3>
             <div class="features">
                 ${material.features.slice(0, 4).map(feature => 
@@ -1292,7 +1296,8 @@ function renderMaterials() {
                 }
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 // 显示材质详情
@@ -3183,19 +3188,19 @@ function buildUploadedImageMap(imageFiles) {
         const noExt = lower.replace(/\.[a-z0-9]+$/, '');
         const compact = lower.replace(/\s+/g, '');
         
-        // 检查文件大小（限制为500KB）
-        if (img.size > 500 * 1024) {
-            console.warn(`图片 ${filename} 太大 (${(img.size/1024).toFixed(1)}KB)，将跳过`);
+        // 检查文件大小（限制为2MB）
+        if (img.size > 2 * 1024 * 1024) {
+            console.warn(`图片 ${filename} 太大 (${(img.size/1024/1024).toFixed(1)}MB)，将跳过`);
             resolve();
             return;
         }
         
         const r = new FileReader();
         r.onload = () => {
-            // 检查base64字符串长度（限制为300KB）
+            // 检查base64字符串长度（限制为2MB）
             const base64 = r.result;
-            if (base64.length > 300 * 1024) {
-                console.warn(`图片 ${filename} base64太大 (${(base64.length/1024).toFixed(1)}KB)，将跳过`);
+            if (base64.length > 2 * 1024 * 1024) {
+                console.warn(`图片 ${filename} base64太大 (${(base64.length/1024/1024).toFixed(1)}MB)，将跳过`);
                 resolve();
                 return;
             }
