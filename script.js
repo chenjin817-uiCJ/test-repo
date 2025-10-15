@@ -41,6 +41,16 @@ let currentHighlightCategory = 'all'; // 当前选择的产品卖点分类，用
 let designPointCategories = [];
 let filteredDesignPointCategories = [];
 
+// 产品分类相关变量
+let productCategories = [
+    { id: 1, name: '休闲椅', value: 'lounge_chair' },
+    { id: 2, name: '长凳', value: 'bench' },
+    { id: 3, name: '沙发', value: 'sofa' },
+    { id: 4, name: '升降吧椅', value: 'adjustable_bar_stool' },
+    { id: 5, name: '桌子', value: 'table' },
+    { id: 6, name: '儿童椅', value: 'children_chair' }
+];
+
 // 示例选项数据
 const sampleOptions = [
     {
@@ -444,8 +454,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.tagName === 'IMG' && e.target.hasAttribute('data-image-src')) {
             // 检查是否在模态框内，如果是则使用不同的处理方式
             const modal = e.target.closest('.modal');
-            if (modal && modal.id !== 'imagePreviewModal') {
-                // 在模态框内的图片点击
+            
+            if (modal && modal.id === 'imagePreviewModal') {
+                // 在图片预览模态框内的图片点击 - 关闭模态框
+                console.log('Image preview modal image click detected, closing modal');
+                closeImagePreview();
+            } else if (modal && modal.id !== 'imagePreviewModal') {
+                // 在其他模态框内的图片点击
                 const imageSrc = e.target.getAttribute('data-image-src');
                 console.log('Modal image click detected, src:', imageSrc);
                 openImagePreview(imageSrc);
@@ -612,6 +627,17 @@ function initializeApp() {
         if (storedHighlights) {
             highlights = JSON.parse(storedHighlights);
             console.log('从localStorage加载产品卖点数据:', highlights);
+            
+            // 检查是否有blob URL需要转换
+            const hasBlobUrls = highlights.some(h => h.imageUrl && h.imageUrl.startsWith('blob:'));
+            if (hasBlobUrls) {
+                console.log('检测到blob URL，将在后台转换...');
+                setTimeout(() => {
+                    convertHighlightImagesToBase64().then(() => {
+                        console.log('现有图片转换完成');
+                    });
+                }, 1000);
+            }
         } else {
             highlights = [...sampleHighlights];
             console.log('使用示例产品卖点数据:', highlights);
@@ -649,14 +675,14 @@ function initializeApp() {
         }
         
         // 为桌子类产品添加面板材质字段
-        if (highlight.category === 'table' && highlight.panelMaterial === undefined) {
+        if (isTableCategory(highlight.category) && highlight.panelMaterial === undefined) {
             highlight.panelMaterial = '';
             dataUpdated = true;
             console.log(`为桌子产品 ${highlight.name} 添加空的面板材质字段`);
         }
         
         // 为桌子类产品添加适用人数字段
-        if (highlight.category === 'table' && highlight.capacity === undefined) {
+        if (isTableCategory(highlight.category) && highlight.capacity === undefined) {
             highlight.capacity = '';
             dataUpdated = true;
             console.log(`为桌子产品 ${highlight.name} 添加空的适用人数字段`);
@@ -727,6 +753,12 @@ function initializeApp() {
     
     // 填充色板型号选择框
     populateColorCodeSelects();
+
+    // 初始化产品分类数据
+    loadProductCategories();
+    
+    // 更新子分类选择器
+    updateSubcategorySelectors();
 
     renderMaterials();
 }
@@ -916,6 +948,17 @@ function setupEventListeners() {
             sceneImageEditForm.addEventListener('submit', handleSceneImageEdit);
         }
 
+        // 产品分类管理表单事件
+        const addCategoryForm = document.getElementById('addCategoryForm');
+        if (addCategoryForm) {
+            addCategoryForm.addEventListener('submit', handleAddCategory);
+        }
+
+        const editCategoryForm = document.getElementById('editCategoryForm');
+        if (editCategoryForm) {
+            editCategoryForm.addEventListener('submit', handleEditCategory);
+        }
+
         // 设计点编辑本地图片选择与预览
         const editDesignPointImageFileInput = document.getElementById('editDesignPointImageFile');
         const editDesignPointPreview = document.getElementById('editDesignPointImagePreview');
@@ -941,17 +984,40 @@ function setupEventListeners() {
                 const category = e.target.value;
                 const materialFields = document.getElementById('addMaterialFields');
                 const tableMaterialFields = document.getElementById('addTableMaterialFields');
+                const productNameField = document.getElementById('addProductNameField');
+                const productNameInput = document.getElementById('addHighlightName');
                 
-                if (materialFields && tableMaterialFields) {
-                    if (category === 'seating') {
+                const childrenChairMaterialFields = document.getElementById('addChildrenChairMaterialFields');
+                
+                if (materialFields && tableMaterialFields && childrenChairMaterialFields) {
+                    if (isSeatingCategory(category)) {
+                        // 坐具分类：隐藏产品名称字段，显示坐具材质字段
+                        if (productNameField) productNameField.style.display = 'none';
+                        if (productNameInput) productNameInput.required = false;
                         materialFields.style.display = 'block';
                         tableMaterialFields.style.display = 'none';
-                    } else if (category === 'table') {
+                        childrenChairMaterialFields.style.display = 'none';
+                    } else if (isTableCategory(category)) {
+                        // 桌子分类：隐藏产品名称字段，显示桌子材质字段
+                        if (productNameField) productNameField.style.display = 'none';
+                        if (productNameInput) productNameInput.required = false;
                         materialFields.style.display = 'none';
                         tableMaterialFields.style.display = 'block';
-                    } else {
+                        childrenChairMaterialFields.style.display = 'none';
+                    } else if (isChildrenChairCategory(category)) {
+                        // 儿童椅分类：隐藏产品名称字段，显示儿童椅材质字段
+                        if (productNameField) productNameField.style.display = 'none';
+                        if (productNameInput) productNameInput.required = false;
                         materialFields.style.display = 'none';
                         tableMaterialFields.style.display = 'none';
+                        childrenChairMaterialFields.style.display = 'block';
+                    } else {
+                        // 其他分类：显示产品名称字段，隐藏所有材质字段
+                        if (productNameField) productNameField.style.display = 'block';
+                        if (productNameInput) productNameInput.required = true;
+                        materialFields.style.display = 'none';
+                        tableMaterialFields.style.display = 'none';
+                        childrenChairMaterialFields.style.display = 'none';
                     }
                 }
             });
@@ -964,17 +1030,25 @@ function setupEventListeners() {
                 const category = e.target.value;
                 const materialFields = document.getElementById('editMaterialFields');
                 const tableMaterialFields = document.getElementById('editTableMaterialFields');
+                const childrenChairMaterialFields = document.getElementById('editChildrenChairMaterialFields');
                 
-                if (materialFields && tableMaterialFields) {
-                    if (category === 'seating') {
+                if (materialFields && tableMaterialFields && childrenChairMaterialFields) {
+                    if (isSeatingCategory(category)) {
                         materialFields.style.display = 'block';
                         tableMaterialFields.style.display = 'none';
-                    } else if (category === 'table') {
+                        childrenChairMaterialFields.style.display = 'none';
+                    } else if (isTableCategory(category)) {
                         materialFields.style.display = 'none';
                         tableMaterialFields.style.display = 'block';
+                        childrenChairMaterialFields.style.display = 'none';
+                    } else if (isChildrenChairCategory(category)) {
+                        materialFields.style.display = 'none';
+                        tableMaterialFields.style.display = 'none';
+                        childrenChairMaterialFields.style.display = 'block';
                     } else {
                         materialFields.style.display = 'none';
                         tableMaterialFields.style.display = 'none';
+                        childrenChairMaterialFields.style.display = 'none';
                     }
                 }
             });
@@ -1322,6 +1396,15 @@ function openImagePreview(src) {
         const testImg = new Image();
         testImg.onload = function() {
             img.src = src;
+            img.setAttribute('data-image-src', src); // 设置data-image-src属性以便点击关闭
+            
+            // 直接为预览图片添加点击事件监听器
+            img.onclick = function(e) {
+                console.log('External preview image clicked directly');
+                e.stopPropagation(); // 阻止事件冒泡
+                closeImagePreview();
+            };
+            
             modal.style.display = 'flex';
             modal.style.pointerEvents = 'auto';
             modal.classList.add('show');
@@ -1332,6 +1415,15 @@ function openImagePreview(src) {
             console.error('Failed to load external image:', src);
             // 显示友好的错误信息而不是系统弹窗
             img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjhmOWZhIi8+PHRleHQgeD0iNTAlIiB5PSI0MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+5Zu+54mH5Yqg6L295aSx6LSlPC90ZXh0Pjx0ZXh0IHg9IjUwJSIgeT0iNjAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPuWKoOi9veWksei0peWksei0pTwvdGV4dD48L3N2Zz4=';
+            img.setAttribute('data-image-src', src); // 设置data-image-src属性以便点击关闭
+            
+            // 为错误图片也添加点击事件监听器
+            img.onclick = function(e) {
+                console.log('External error preview image clicked directly');
+                e.stopPropagation(); // 阻止事件冒泡
+                closeImagePreview();
+            };
+            
             modal.style.display = 'flex';
             modal.style.pointerEvents = 'auto';
             modal.classList.add('show');
@@ -1341,9 +1433,26 @@ function openImagePreview(src) {
     } else {
         // 本地图片或base64图片
         img.src = src;
+        img.setAttribute('data-image-src', src); // 设置data-image-src属性以便点击关闭
+        
+        // 直接为预览图片添加点击事件监听器
+        img.onclick = function(e) {
+            console.log('Preview image clicked directly');
+            e.stopPropagation(); // 阻止事件冒泡
+            closeImagePreview();
+        };
+        
         img.onerror = function() {
             console.error('Failed to load image:', src);
             img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjhmOWZhIi8+PHRleHQgeD0iNTAlIiB5PSI0MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+5Zu+54mH5Yqg6L295aSx6LSlPC90ZXh0Pjx0ZXh0IHg9IjUwJSIgeT0iNjAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPuWKoOi9veWksei0peWksei0pTwvdGV4dD48L3N2Zz4=';
+            img.setAttribute('data-image-src', src); // 设置data-image-src属性以便点击关闭
+            
+            // 为错误图片也添加点击事件监听器
+            img.onclick = function(e) {
+                console.log('Error preview image clicked directly');
+                e.stopPropagation(); // 阻止事件冒泡
+                closeImagePreview();
+            };
         };
         modal.style.display = 'flex';
         modal.style.pointerEvents = 'auto';
@@ -1708,24 +1817,36 @@ function diagnoseIssues() {
 }
 
 function closeImagePreview() {
+    console.log('=== closeImagePreview called ===');
     const modal = document.getElementById('imagePreviewModal');
     const img = document.getElementById('previewImage');
     
+    console.log('Modal element:', modal);
+    console.log('Image element:', img);
+    
     if (modal) {
+        console.log('Closing image preview modal');
         modal.classList.remove('show');
         modal.style.display = 'none';
         modal.style.pointerEvents = ''; // 清理pointer-events样式
         modal.style.zIndex = ''; // 清理z-index样式
+        console.log('Modal closed successfully');
+    } else {
+        console.error('Image preview modal not found');
     }
     
     if (img) {
         img.src = '';
+        console.log('Image src cleared');
+    } else {
+        console.error('Preview image element not found');
     }
     
     // 恢复背景页面滚动
     allowBodyScroll();
     
     console.log('Image preview modal closed');
+    console.log('=== closeImagePreview completed ===');
 }
 
 // 关闭模态框
@@ -3626,21 +3747,21 @@ function closeEditColorboardFabricModal() {
     const modalContent = modal ? modal.querySelector('.modal-content') : null;
     
     if (modal) {
-        modal.classList.remove('show');
-        modal.style.display = 'none';
-        modal.style.pointerEvents = '';
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    modal.style.pointerEvents = '';
         console.log('模态框样式已重置');
-        
-        // 清理样式
-        if (modalContent) {
-            modalContent.style.overflowY = '';
-            modalContent.style.maxHeight = '';
-            modalContent.style.height = '';
+    
+    // 清理样式
+    if (modalContent) {
+        modalContent.style.overflowY = '';
+        modalContent.style.maxHeight = '';
+        modalContent.style.height = '';
             console.log('模态框内容样式已清理');
-        }
-        
-        // 恢复背景页面滚动
-        allowBodyScroll();
+    }
+    
+    // 恢复背景页面滚动
+    allowBodyScroll();
         console.log('背景滚动已恢复');
     } else {
         console.log('未找到编辑色板面料模态框');
@@ -3814,7 +3935,7 @@ function deleteColorboardFabric() {
     // 关闭模态框
     console.log('准备关闭模态框');
     try {
-        closeEditColorboardFabricModal();
+    closeEditColorboardFabricModal();
         console.log('模态框关闭函数已调用');
     } catch (error) {
         console.error('关闭模态框时出错:', error);
@@ -5205,7 +5326,7 @@ function renderHighlights() {
             ${highlight.imageUrl ? `
                 <div class="highlight-thumb">
                     <img src="${highlight.imageUrl}" alt="${highlight.name}" onerror="this.style.display='none'" />
-                    <div class="highlight-category ${highlight.category}">${getHighlightCategoryLabel(highlight.category)}</div>
+                    <div class="highlight-category ${highlight.category}">${getHighlightCategoryLabel(highlight.category, highlight.subcategory)}</div>
                 </div>
             ` : ''}
             <div class="highlight-info">
@@ -5225,12 +5346,91 @@ function renderHighlights() {
     `).join('');
 }
 
+// 判断是否为坐具分类
+function isSeatingCategory(category) {
+    const seatingCategories = ['lounge_chair', 'bench', 'sofa', 'adjustable_bar_stool'];
+    const seatingCategoryNames = ['休闲椅', '长凳', '沙发', '升降吧椅', '餐椅', '吧椅']; // 添加中文名称支持
+    
+    return seatingCategories.includes(category) || seatingCategoryNames.includes(category);
+}
+
+// 判断是否为桌子分类
+function isTableCategory(category) {
+    const tableCategories = ['table'];
+    const tableCategoryNames = ['桌子', '咖啡桌', '餐桌', '办公桌', '茶几', '边桌', '书桌']; // 添加桌子子分类支持
+    
+    return tableCategories.includes(category) || tableCategoryNames.includes(category);
+}
+
+// 判断是否为儿童椅分类
+function isChildrenChairCategory(category) {
+    const childrenChairCategories = ['children_chair'];
+    const childrenChairCategoryNames = [
+        '儿童椅', '儿童座椅', '宝宝椅', '幼儿椅', 
+        '学习椅', '游戏椅', '儿童学习椅', '儿童游戏椅',
+        '学生椅', '儿童书桌椅', '儿童餐椅', '儿童高脚椅'
+    ]; // 添加更多儿童椅子分类支持
+    
+    return childrenChairCategories.includes(category) || childrenChairCategoryNames.includes(category);
+}
+
 // 获取产品卖点分类标签
-function getHighlightCategoryLabel(category) {
-    const labels = {
-        'seating': '坐具',
-        'table': '桌子'
-    };
+function getHighlightCategoryLabel(category, subcategory = '') {
+    // 坐具子分类直接显示名称
+    if (isSeatingCategory(category)) {
+        const labels = {
+            'lounge_chair': '休闲椅',
+            'bench': '长凳',
+            'sofa': '沙发',
+            'adjustable_bar_stool': '升降吧椅',
+            'dining_chair': '餐椅',
+            'bar_stool': '吧椅'
+        };
+        return labels[category] || category;
+    }
+    
+    // 桌子子分类直接显示名称
+    if (isTableCategory(category)) {
+        const labels = {
+            'table': '桌子',
+            '咖啡桌': '咖啡桌',
+            '餐桌': '餐桌',
+            '办公桌': '办公桌',
+            '茶几': '茶几',
+            '边桌': '边桌',
+            '书桌': '书桌'
+        };
+        return labels[category] || category;
+    }
+    
+    // 儿童椅子分类直接显示名称
+    if (isChildrenChairCategory(category)) {
+        const labels = {
+            'children_chair': '儿童椅',
+            '儿童椅': '儿童椅',
+            '儿童座椅': '儿童座椅',
+            '宝宝椅': '宝宝椅',
+            '幼儿椅': '幼儿椅',
+            '学习椅': '学习椅',
+            '游戏椅': '游戏椅',
+            '儿童学习椅': '儿童学习椅',
+            '儿童游戏椅': '儿童游戏椅',
+            '学生椅': '学生椅',
+            '儿童书桌椅': '儿童书桌椅',
+            '儿童餐椅': '儿童餐椅',
+            '儿童高脚椅': '儿童高脚椅'
+        };
+        return labels[category] || category;
+    }
+    
+    // 其他分类
+    const labels = {};
+    
+    // 如果有子分类，显示子分类名称
+    if (subcategory && subcategory.trim() !== '') {
+        return subcategory;
+    }
+    
     return labels[category] || category;
 }
 
@@ -5268,24 +5468,20 @@ function formatFabricLink(fabricName) {
 
 // 查找匹配的面料
 function findMatchingFabric(fabricName) {
-    const searchName = fabricName.toLowerCase().trim();
+    const searchName = (fabricName || '').toString().trim().toLowerCase();
+    if (!searchName) return null;
+    
+    const getCode = (f) => ((f && f.code) ? f.code.toString().trim().toLowerCase() : '');
     
     // 首先精确匹配
-    let matched = fabrics.find(f => 
-        f.code.toLowerCase() === searchName
-    );
-    
+    let matched = fabrics.find(f => getCode(f) === searchName);
     if (matched) return matched;
     
     // 然后模糊匹配面料型号
-    matched = fabrics.find(f => 
-        f.code.toLowerCase().includes(searchName)
-    );
-    
+    matched = fabrics.find(f => getCode(f).includes(searchName));
     if (matched) return matched;
     
-    
-    return matched;
+    return null;
 }
 
 // 导航到面料详情页面
@@ -5491,6 +5687,9 @@ function updateHighlightPageButtons() {
                 case 'table':
                     categoryText = '桌子';
                     break;
+                case 'children_chair':
+                    categoryText = '儿童椅';
+                    break;
                 default:
                     categoryText = '产品';
                     break;
@@ -5517,6 +5716,9 @@ function updateAddHighlightModalForCategory() {
             case 'table':
                 categoryText = '桌子';
                 break;
+            case 'children_chair':
+                categoryText = '儿童椅';
+                break;
             default:
                 categoryText = '产品';
                 break;
@@ -5526,11 +5728,29 @@ function updateAddHighlightModalForCategory() {
     
     // 预选当前分类
     if (categorySelect && currentHighlightCategory !== 'all') {
-        categorySelect.value = currentHighlightCategory;
+        // 如果当前分类是seating，选择第一个坐具分类
+        if (currentHighlightCategory === 'seating') {
+            const seatingOption = Array.from(categorySelect.options).find(opt => 
+                isSeatingCategory(opt.value)
+            );
+            if (seatingOption) {
+                categorySelect.value = seatingOption.value;
+            } else {
+                categorySelect.value = currentHighlightCategory;
+            }
+        } else {
+            categorySelect.value = currentHighlightCategory;
+        }
         
-        // 触发分类改变事件以显示对应的材质字段
+        // 触发分类改变事件以显示对应的材质字段和产品名称字段
         const event = new Event('change');
         categorySelect.dispatchEvent(event);
+    } else {
+        // 如果没有预选分类，默认隐藏产品名称字段（坐具分类不需要产品名称）
+        const productNameField = document.getElementById('addProductNameField');
+        const productNameInput = document.getElementById('addHighlightName');
+        if (productNameField) productNameField.style.display = 'none';
+        if (productNameInput) productNameInput.required = false;
     }
 }
 
@@ -5549,6 +5769,9 @@ function updateHighlightUploadModalForCategory() {
             case 'table':
                 categoryText = '桌子';
                 break;
+            case 'children_chair':
+                categoryText = '儿童椅';
+                break;
             default:
                 categoryText = '产品';
                 break;
@@ -5564,21 +5787,19 @@ function updateHighlightUploadModalForCategory() {
                 instructionsHtml = `
                     <h3>坐具卖点Excel与图片上传说明：</h3>
                     <ul>
-                        <li>第一列：产品名称</li>
-                        <li>第二列：父款型号</li>
-                        <li>第三列：产品分类（seating）</li>
-                        <li>第四列：卖点描述</li>
-                        <li>第五列：核心卖点（用逗号分隔）</li>
-                        <li>第六列：参考链接1（可选）</li>
-                        <li>第七列：参考链接2（可选）</li>
-                        <li>第八列：参考链接3（可选）</li>
-                        <li>第九列：图片文件名 或 图片URL（可选）</li>
-                        <li>第十列：面料材质（可选）</li>
-                        <li>第十一列：脚材质（可选）</li>
-                        <li>第十二列：海绵材质（可选）</li>
-                        <li>第十三列：框架材质（可选）</li>
-                        <li>第十四列：功能（可选）</li>
-                        <li>如使用本地图片，请与Excel一同选择相应图片文件；第九列填写文件名（如 <code>product1.jpg</code>），系统会自动匹配。</li>
+                        <li>第一列：父款型号</li>
+                        <li>第二列：产品分类（坐具子分类：休闲椅、长凳、沙发、升降吧椅）</li>
+                        <li>第三列：核心卖点（用逗号分隔）</li>
+                        <li>第四列：参考链接1（可选）</li>
+                        <li>第五列：参考链接2（可选）</li>
+                        <li>第六列：参考链接3（可选）</li>
+                        <li>第七列：图片文件名 或 图片URL（可选）</li>
+                        <li>第八列：面料材质（可选）</li>
+                        <li>第九列：脚材质（可选）</li>
+                        <li>第十列：海绵材质（可选）</li>
+                        <li>第十一列：框架材质（可选）</li>
+                        <li>第十二列：功能（可选）</li>
+                        <li>如使用本地图片，请与Excel一同选择相应图片文件；第七列填写文件名（如 <code>product1.jpg</code>），系统会自动匹配。</li>
                     </ul>
                 `;
                 break;
@@ -5586,20 +5807,39 @@ function updateHighlightUploadModalForCategory() {
                 instructionsHtml = `
                     <h3>桌子卖点Excel与图片上传说明：</h3>
                     <ul>
-                        <li>第一列：产品名称</li>
-                        <li>第二列：父款型号</li>
-                        <li>第三列：产品分类（table）</li>
-                        <li>第四列：卖点描述</li>
-                        <li>第五列：核心卖点（用逗号分隔）</li>
-                        <li>第六列：参考链接1（可选）</li>
-                        <li>第七列：参考链接2（可选）</li>
-                        <li>第八列：参考链接3（可选）</li>
-                        <li>第九列：图片文件名 或 图片URL（可选）</li>
-                        <li>第十列：面板材质（可选）</li>
-                        <li>第十一列：脚材质（可选）</li>
-                        <li>第十二列：适用人数（可选）</li>
+                        <li>第一列：父款型号</li>
+                        <li>第二列：产品分类（桌子）</li>
+                        <li>第三列：核心卖点（用逗号分隔）</li>
+                        <li>第四列：参考链接1（可选）</li>
+                        <li>第五列：参考链接2（可选）</li>
+                        <li>第六列：参考链接3（可选）</li>
+                        <li>第七列：图片文件名 或 图片URL（可选）</li>
+                        <li>第八列：面板材质（可选）</li>
+                        <li>第九列：脚材质（可选）</li>
+                        <li>第十列：适用人数（可选）</li>
+                        <li>第十一列：功能（可选）</li>
+                        <li>如使用本地图片，请与Excel一同选择相应图片文件；第七列填写文件名（如 <code>product1.jpg</code>），系统会自动匹配。</li>
+                    </ul>
+                `;
+                break;
+            case 'children_chair':
+                instructionsHtml = `
+                    <h3>儿童椅卖点Excel与图片上传说明：</h3>
+                    <ul>
+                        <li>第一列：父款型号</li>
+                        <li>第二列：产品分类（儿童椅）</li>
+                        <li>第三列：核心卖点（用逗号分隔）</li>
+                        <li>第四列：参考链接1（可选）</li>
+                        <li>第五列：参考链接2（可选）</li>
+                        <li>第六列：参考链接3（可选）</li>
+                        <li>第七列：图片文件名 或 图片URL（可选）</li>
+                        <li>第八列：面料材质（可选）</li>
+                        <li>第九列：脚材质（可选）</li>
+                        <li>第十列：海绵材质（可选）</li>
+                        <li>第十一列：框架材质（可选）</li>
+                        <li>第十二列：适用年龄段（可选）</li>
                         <li>第十三列：功能（可选）</li>
-                        <li>如使用本地图片，请与Excel一同选择相应图片文件；第九列填写文件名（如 <code>product1.jpg</code>），系统会自动匹配。</li>
+                        <li>如使用本地图片，请与Excel一同选择相应图片文件；第七列填写文件名（如 <code>product1.jpg</code>），系统会自动匹配。</li>
                     </ul>
                 `;
                 break;
@@ -5607,23 +5847,22 @@ function updateHighlightUploadModalForCategory() {
                 instructionsHtml = `
                     <h3>产品卖点Excel与图片上传说明：</h3>
                     <ul>
-                        <li>第一列：产品名称</li>
-                        <li>第二列：父款型号</li>
-                        <li>第三列：产品分类（seating、table）</li>
-                        <li>第四列：卖点描述</li>
-                        <li>第五列：核心卖点（用逗号分隔）</li>
-                        <li>第六列：参考链接1（可选）</li>
-                        <li>第七列：参考链接2（可选）</li>
-                        <li>第八列：参考链接3（可选）</li>
-                        <li>第九列：图片文件名 或 图片URL（可选）</li>
-                        <li>第十列：面料材质（仅坐具，可选）</li>
-                        <li>第十一列：脚材质（仅坐具，可选）</li>
-                        <li>第十二列：海绵材质（仅坐具，可选）</li>
-                        <li>第十三列：框架材质（仅坐具，可选）</li>
-                        <li>第十四列：面板材质（仅桌子，可选）</li>
-                        <li>第十五列：适用人数（仅桌子，可选）</li>
-                        <li>第十六列：功能（可选）</li>
-                        <li>如使用本地图片，请与Excel一同选择相应图片文件；第九列填写文件名（如 <code>product1.jpg</code>），系统会自动匹配。</li>
+                        <li>第一列：父款型号</li>
+                        <li>第二列：产品分类（seating、table）</li>
+                        <li>第三列：卖点描述</li>
+                        <li>第四列：核心卖点（用逗号分隔）</li>
+                        <li>第五列：参考链接1（可选）</li>
+                        <li>第六列：参考链接2（可选）</li>
+                        <li>第七列：参考链接3（可选）</li>
+                        <li>第八列：图片文件名 或 图片URL（可选）</li>
+                        <li>第九列：面料材质（仅坐具，可选）</li>
+                        <li>第十列：脚材质（仅坐具，可选）</li>
+                        <li>第十一列：海绵材质（仅坐具，可选）</li>
+                        <li>第十二列：框架材质（仅坐具，可选）</li>
+                        <li>第十三列：面板材质（仅桌子，可选）</li>
+                        <li>第十四列：适用人数（仅桌子，可选）</li>
+                        <li>第十五列：功能（可选）</li>
+                        <li>如使用本地图片，请与Excel一同选择相应图片文件；第八列填写文件名（如 <code>product1.jpg</code>），系统会自动匹配。</li>
                     </ul>
                 `;
                 break;
@@ -5647,17 +5886,35 @@ function applyHighlightFilters() {
     
     // 应用分类过滤
     if (highlightCategoryFilter !== 'all') {
-        filtered = filtered.filter(h => h.category === highlightCategoryFilter);
+        if (highlightCategoryFilter === 'seating') {
+            // 坐具分类：包含所有坐具子分类
+            filtered = filtered.filter(h => isSeatingCategory(h.category));
+        } else if (highlightCategoryFilter === 'table') {
+            // 桌子分类：包含所有桌子子分类
+            filtered = filtered.filter(h => isTableCategory(h.category));
+        } else if (highlightCategoryFilter === 'children_chair') {
+            // 儿童椅分类：包含所有儿童椅子分类
+            filtered = filtered.filter(h => isChildrenChairCategory(h.category));
+        } else {
+            // 其他分类：直接匹配
+            filtered = filtered.filter(h => h.category === highlightCategoryFilter);
+        }
     }
     
     // 应用搜索过滤
     if (highlightSearchQuery) {
-        filtered = filtered.filter(highlight => 
-            highlight.name.toLowerCase().includes(highlightSearchQuery) ||
-            highlight.parentModel.toLowerCase().includes(highlightSearchQuery) ||
-            highlight.description.toLowerCase().includes(highlightSearchQuery) ||
-            highlight.features.some(feature => feature.toLowerCase().includes(highlightSearchQuery))
-        );
+        filtered = filtered.filter(highlight => {
+            const name = (highlight.name || '').toLowerCase();
+            const parentModel = (highlight.parentModel || '').toLowerCase();
+            const description = (highlight.description || '').toLowerCase();
+            const features = Array.isArray(highlight.features) ? highlight.features : [];
+            return (
+                name.includes(highlightSearchQuery) ||
+                parentModel.includes(highlightSearchQuery) ||
+                description.includes(highlightSearchQuery) ||
+                features.some(feature => (feature || '').toLowerCase().includes(highlightSearchQuery))
+            );
+        });
     }
     
     filteredHighlights = filtered;
@@ -5688,11 +5945,18 @@ function showHighlightDetail(highlightId) {
         <div class="detail-section">
             <h4>产品信息</h4>
             <p><strong>父款型号：</strong>${highlight.parentModel}</p>
-            <p><strong>产品分类：</strong>${getHighlightCategoryLabel(highlight.category)}</p>
-            ${highlight.category === 'table' ? `
+            <p><strong>产品分类：</strong>${getHighlightCategoryLabel(highlight.category, highlight.subcategory)}</p>
+            ${isTableCategory(highlight.category) ? `
                 <p><strong>面板材质：</strong>${formatMaterialLink(highlight.panelMaterial, 'wood')}</p>
                 <p><strong>脚材质：</strong>${formatMaterialLink(highlight.legMaterial, 'wood')}</p>
                 <p><strong>适用人数：</strong>${highlight.capacity || '未填写'}</p>
+                <p><strong>功能：</strong>${highlight.function || '未填写'}</p>
+            ` : isChildrenChairCategory(highlight.category) ? `
+                <p><strong>面料材质：</strong>${formatFabricLink(highlight.fabricMaterial)}</p>
+                <p><strong>脚材质：</strong>${formatMaterialLink(highlight.legMaterial, 'wood')}</p>
+                <p><strong>海绵材质：</strong>${formatMaterialLink(highlight.spongeMaterial, 'fabric')}</p>
+                <p><strong>框架材质：</strong>${formatMaterialLink(highlight.frameMaterial, 'wood')}</p>
+                <p><strong>适用年龄段：</strong>${highlight.ageRange || '未填写'}</p>
                 <p><strong>功能：</strong>${highlight.function || '未填写'}</p>
             ` : `
                 <p><strong>面料材质：</strong>${formatFabricLink(highlight.fabricMaterial)}</p>
@@ -5703,6 +5967,14 @@ function showHighlightDetail(highlightId) {
             `}
         </div>
         
+        ${Array.isArray(highlight.features) && highlight.features.length ? `
+        <div class="detail-section">
+            <h4>核心卖点</h4>
+            <div class="highlight-features">
+                ${highlight.features.map(f => `<span class="highlight-feature-tag">${f}</span>`).join('')}
+            </div>
+        </div>
+        ` : ''}
         <div class="detail-section">
             <h4>参考链接</h4>
             ${highlight.referenceLinks && highlight.referenceLinks.length > 0 ? 
@@ -5911,10 +6183,12 @@ function showEditHighlightModal(highlightId) {
     
     // 填充编辑表单
     document.getElementById('editHighlightId').value = highlight.id;
-    document.getElementById('editHighlightName').value = highlight.name;
+    // 产品名称输入框已移除，无需赋值
     document.getElementById('editHighlightParentModel').value = highlight.parentModel;
-    document.getElementById('editHighlightCategory').value = highlight.category;
-    document.getElementById('editHighlightDescription').value = highlight.description || '';
+    // 设置分类值，如果有子分类则使用子分类值，否则使用原分类值
+    const categoryValue = highlight.subcategory || highlight.category;
+    document.getElementById('editHighlightCategory').value = categoryValue;
+    // 描述输入框已移除，无需赋值
     document.getElementById('editHighlightFeatures').value = highlight.features.join(', ');
     // 填充参考链接
     const referenceLinks = highlight.referenceLinks || ['', '', ''];
@@ -5926,23 +6200,36 @@ function showEditHighlightModal(highlightId) {
     // 处理材质字段显示和填充
     const materialFields = document.getElementById('editMaterialFields');
     const tableMaterialFields = document.getElementById('editTableMaterialFields');
+    const childrenChairMaterialFields = document.getElementById('editChildrenChairMaterialFields');
     
-    if (materialFields && tableMaterialFields) {
-        if (highlight.category === 'seating') {
+    if (materialFields && tableMaterialFields && childrenChairMaterialFields) {
+        if (isSeatingCategory(categoryValue)) {
             materialFields.style.display = 'block';
             tableMaterialFields.style.display = 'none';
+            childrenChairMaterialFields.style.display = 'none';
             document.getElementById('editHighlightFabricMaterial').value = highlight.fabricMaterial || '';
             document.getElementById('editHighlightLegMaterial').value = highlight.legMaterial || '';
             document.getElementById('editHighlightSpongeMaterial').value = highlight.spongeMaterial || '';
             document.getElementById('editHighlightFrameMaterial').value = highlight.frameMaterial || '';
             document.getElementById('editHighlightFunction').value = highlight.function || '';
-        } else if (highlight.category === 'table') {
+        } else if (isTableCategory(categoryValue)) {
             materialFields.style.display = 'none';
             tableMaterialFields.style.display = 'block';
+            childrenChairMaterialFields.style.display = 'none';
             document.getElementById('editHighlightPanelMaterial').value = highlight.panelMaterial || '';
             document.getElementById('editHighlightTableLegMaterial').value = highlight.legMaterial || '';
             document.getElementById('editHighlightTableCapacity').value = highlight.capacity || '';
             document.getElementById('editHighlightTableFunction').value = highlight.function || '';
+        } else if (isChildrenChairCategory(categoryValue)) {
+            materialFields.style.display = 'none';
+            tableMaterialFields.style.display = 'none';
+            childrenChairMaterialFields.style.display = 'block';
+            document.getElementById('editHighlightChildrenChairFabricMaterial').value = highlight.fabricMaterial || '';
+            document.getElementById('editHighlightChildrenChairLegMaterial').value = highlight.legMaterial || '';
+            document.getElementById('editHighlightChildrenChairSpongeMaterial').value = highlight.spongeMaterial || '';
+            document.getElementById('editHighlightChildrenChairFrameMaterial').value = highlight.frameMaterial || '';
+            document.getElementById('editHighlightChildrenChairAgeRange').value = highlight.ageRange || '';
+            document.getElementById('editHighlightChildrenChairFunction').value = highlight.function || '';
         } else {
             materialFields.style.display = 'none';
             tableMaterialFields.style.display = 'none';
@@ -6035,7 +6322,8 @@ function handleAddHighlight(e) {
     const hasLocalImage = !!(imgFileInput && imgFileInput.files && imgFileInput.files[0]);
     const imageUrlText = imgInput.value.trim();
 
-    if (!name) {
+    // 只有在非坐具、非桌子和非儿童椅分类时才验证产品名称
+    if (!isSeatingCategory(category) && !isTableCategory(category) && !isChildrenChairCategory(category) && !name) {
         alert('请填写产品名称');
         nameInput.focus();
         return;
@@ -6093,7 +6381,7 @@ function handleAddHighlight(e) {
         // 构建基础产品信息
         const newHighlight = {
             id: Date.now(),
-            name: name,
+            name: (isSeatingCategory(category) || isTableCategory(category) || isChildrenChairCategory(category)) ? '' : name, // 坐具、桌子和儿童椅分类时产品名称为空
             parentModel: parentModel,
             category: category,
             description: '', // 设置为空字符串，保持数据结构一致
@@ -6105,7 +6393,7 @@ function handleAddHighlight(e) {
         };
         
         // 根据分类添加不同的材质信息
-        if (category === 'seating') {
+        if (isSeatingCategory(category)) {
             const fabricMaterial = document.getElementById('addHighlightFabricMaterial').value.trim();
             const legMaterial = document.getElementById('addHighlightLegMaterial').value.trim();
             const spongeMaterial = document.getElementById('addHighlightSpongeMaterial').value.trim();
@@ -6117,7 +6405,7 @@ function handleAddHighlight(e) {
             newHighlight.spongeMaterial = spongeMaterial;
             newHighlight.frameMaterial = frameMaterial;
             newHighlight.function = functionValue;
-        } else if (category === 'table') {
+        } else if (isTableCategory(category)) {
             const panelMaterial = document.getElementById('addHighlightPanelMaterial').value.trim();
             const legMaterial = document.getElementById('addHighlightTableLegMaterial').value.trim();
             const capacity = document.getElementById('addHighlightTableCapacity').value.trim();
@@ -6126,6 +6414,20 @@ function handleAddHighlight(e) {
             newHighlight.panelMaterial = panelMaterial;
             newHighlight.legMaterial = legMaterial;
             newHighlight.capacity = capacity;
+            newHighlight.function = functionValue;
+        } else if (isChildrenChairCategory(category)) {
+            const fabricMaterial = document.getElementById('addHighlightChildrenChairFabricMaterial').value.trim();
+            const legMaterial = document.getElementById('addHighlightChildrenChairLegMaterial').value.trim();
+            const spongeMaterial = document.getElementById('addHighlightChildrenChairSpongeMaterial').value.trim();
+            const frameMaterial = document.getElementById('addHighlightChildrenChairFrameMaterial').value.trim();
+            const ageRange = document.getElementById('addHighlightChildrenChairAgeRange').value.trim();
+            const functionValue = document.getElementById('addHighlightChildrenChairFunction').value.trim();
+            
+            newHighlight.fabricMaterial = fabricMaterial;
+            newHighlight.legMaterial = legMaterial;
+            newHighlight.spongeMaterial = spongeMaterial;
+            newHighlight.frameMaterial = frameMaterial;
+            newHighlight.ageRange = ageRange;
             newHighlight.function = functionValue;
         }
         
@@ -6199,19 +6501,19 @@ function handleAddHighlight(e) {
 function handleEditHighlight(e) {
     if (e) e.preventDefault();
     const idInput = document.getElementById('editHighlightId');
-    const nameInput = document.getElementById('editHighlightName');
+    // 产品名称输入框已移除
     const parentModelInput = document.getElementById('editHighlightParentModel');
     const categoryInput = document.getElementById('editHighlightCategory');
-    const descriptionInput = document.getElementById('editHighlightDescription');
+    // 描述输入框已移除
     const featuresInput = document.getElementById('editHighlightFeatures');
     const imgInput = document.getElementById('editHighlightImageUrl');
     const imgFileInput = document.getElementById('editHighlightImageFile');
 
     const id = parseInt(idInput.value);
-    const name = nameInput.value.trim();
+    const name = (highlights.find(h => h.id === parseInt(idInput.value))?.name || '').trim();
     const parentModel = parentModelInput.value.trim();
     const category = categoryInput.value;
-    const description = descriptionInput.value.trim();
+    const description = (highlights.find(h => h.id === id)?.description || '');
     const featuresStr = featuresInput.value.trim();
     
     // 获取参考链接
@@ -6223,11 +6525,7 @@ function handleEditHighlight(e) {
     const hasLocalImage = !!(imgFileInput && imgFileInput.files && imgFileInput.files[0]);
     const imageUrlText = imgInput.value.trim();
 
-    if (!name) {
-        alert('请填写产品名称');
-        nameInput.focus();
-        return;
-    }
+    // 去除“产品名称”必填校验（编辑时沿用原值）
     if (!parentModel) {
         alert('请填写父款型号');
         parentModelInput.focus();
@@ -6238,11 +6536,7 @@ function handleEditHighlight(e) {
         categoryInput.focus();
         return;
     }
-    if (!description) {
-        alert('请填写卖点描述');
-        descriptionInput.focus();
-        return;
-    }
+    // 去除“卖点描述”必填校验
 
     const finalizeEdit = (finalImageUrl) => {
         // 获取设计点数据
@@ -6301,7 +6595,7 @@ function handleEditHighlight(e) {
             };
             
         // 根据分类添加不同的材质信息
-        if (category === 'seating') {
+        if (isSeatingCategory(category)) {
                 const fabricMaterial = document.getElementById('editHighlightFabricMaterial').value.trim();
                 const legMaterial = document.getElementById('editHighlightLegMaterial').value.trim();
                 const spongeMaterial = document.getElementById('editHighlightSpongeMaterial').value.trim();
@@ -6316,7 +6610,7 @@ function handleEditHighlight(e) {
                 
                 // 删除桌子专用字段
                 delete updateData.panelMaterial;
-            } else if (category === 'table') {
+            } else if (isTableCategory(category)) {
                 const panelMaterial = document.getElementById('editHighlightPanelMaterial').value.trim();
                 const legMaterial = document.getElementById('editHighlightTableLegMaterial').value.trim();
                 const capacity = document.getElementById('editHighlightTableCapacity').value.trim();
@@ -6331,6 +6625,25 @@ function handleEditHighlight(e) {
                 delete updateData.fabricMaterial;
                 delete updateData.spongeMaterial;
                 delete updateData.frameMaterial;
+                delete updateData.ageRange;
+            } else if (isChildrenChairCategory(category)) {
+                const fabricMaterial = document.getElementById('editHighlightChildrenChairFabricMaterial').value.trim();
+                const legMaterial = document.getElementById('editHighlightChildrenChairLegMaterial').value.trim();
+                const spongeMaterial = document.getElementById('editHighlightChildrenChairSpongeMaterial').value.trim();
+                const frameMaterial = document.getElementById('editHighlightChildrenChairFrameMaterial').value.trim();
+                const ageRange = document.getElementById('editHighlightChildrenChairAgeRange').value.trim();
+                const functionValue = document.getElementById('editHighlightChildrenChairFunction').value.trim();
+                
+                updateData.fabricMaterial = fabricMaterial;
+                updateData.legMaterial = legMaterial;
+                updateData.spongeMaterial = spongeMaterial;
+                updateData.frameMaterial = frameMaterial;
+                updateData.ageRange = ageRange;
+                updateData.function = functionValue;
+                
+                // 删除桌子专用字段
+                delete updateData.panelMaterial;
+                delete updateData.capacity;
             } else {
                 // 其他分类，删除所有材质字段
                 delete updateData.fabricMaterial;
@@ -7644,11 +7957,15 @@ function handleHighlightFileUpload(e) {
         file.type.startsWith('image/')
     );
     
-    // 处理Excel文件
+    // 处理Excel文件：如果同时选择了图片，先暂存，不立刻解析，避免重复解析
     if (excelFiles.length > 0) {
         const excelFile = excelFiles[0]; // 只处理第一个Excel文件
         pendingHighlightExcelFile = excelFile;
+        // 只有在没有同时选择图片时，才立即处理Excel
+        if (imageFiles.length === 0) {
         processHighlightExcelFile(excelFile);
+            pendingHighlightExcelFile = null;
+        }
     }
     
     // 处理图片文件
@@ -7686,6 +8003,16 @@ function processHighlightExcelFile(file) {
                 applyHighlightFilters();
                 renderHighlights();
                 
+                // 先关闭上传模态框，避免遮挡卡片点击
+                try { closeHighlightUploadModal(); } catch (_) {}
+                
+                // 异步转换图片为base64，确保刷新后图片仍然可用
+                setTimeout(() => {
+                    convertHighlightImagesToBase64().then(() => {
+                        console.log('图片转换完成，数据已保存');
+                    });
+                }, 1000);
+                
                 alert(`成功导入 ${newHighlights.length} 个产品卖点数据`);
             } else {
                 alert('Excel文件中没有找到有效的数据');
@@ -7701,40 +8028,91 @@ function processHighlightExcelFile(file) {
 // 解析产品卖点Excel数据
 function parseHighlightExcelData(data) {
     const highlights = [];
-    const headers = data[0];
+    const headers = (data[0] || []).map(h => (h || '').toString().trim());
+    
+    console.log('Excel解析开始 - 表头:', headers);
+    console.log('Excel解析开始 - 数据行数:', data.length);
+    console.log('Excel解析开始 - currentHighlightCategory:', currentHighlightCategory);
+    
+    // 更稳健的列匹配：按关键字优先级
+    const findIdx = (keywords) => headers.findIndex(h => {
+        const lower = h.toLowerCase();
+        return keywords.some(k => lower.includes(k));
+    });
     
     // 查找列索引
-    const nameIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('产品名称'));
-    const parentModelIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('父款型号'));
-    const categoryIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('分类'));
-    const descriptionIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('描述'));
-    const featuresIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('卖点'));
+    const nameIndex = findIdx(['产品名称', '名称', 'name']);
+    const parentModelIndex = findIdx(['父款型号', '父款', '型号']);
+    const categoryIndex = findIdx(['产品分类', '分类', 'category']);
+    const descriptionIndex = findIdx(['卖点描述', '描述', 'description']);
+    // 特性列优先匹配"核心卖点"，避免命中"卖点描述"
+    const featuresIndex = findIdx(['核心卖点', 'features', '卖点']);
+    
+    // 如果列索引匹配失败，使用位置索引作为后备方案
+    const parentModelIndexFallback = parentModelIndex >= 0 ? parentModelIndex : 0;
+    const categoryIndexFallback = categoryIndex >= 0 ? categoryIndex : 1;
+    const featuresIndexFallback = featuresIndex >= 0 ? featuresIndex : 2;
     // 查找多个参考链接字段
-    const referenceLink1Index = headers.findIndex(h => h && h.toString().toLowerCase().includes('参考链接1'));
-    const referenceLink2Index = headers.findIndex(h => h && h.toString().toLowerCase().includes('参考链接2'));
-    const referenceLink3Index = headers.findIndex(h => h && h.toString().toLowerCase().includes('参考链接3'));
+    const referenceLink1Index = findIdx(['参考链接1']);
+    const referenceLink2Index = findIdx(['参考链接2']);
+    const referenceLink3Index = findIdx(['参考链接3']);
     // 兼容旧的单列格式
     const referenceLinkIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('参考链接') && !h.toString().toLowerCase().includes('参考链接1'));
-    const imageUrlIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('图片'));
+    const imageUrlIndex = findIdx(['图片', 'image', 'url']);
     
     // 材质字段索引
-    const fabricMaterialIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('面料材质'));
-    const legMaterialIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('脚材质'));
-    const spongeMaterialIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('海绵材质'));
-    const frameMaterialIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('框架材质'));
-    const panelMaterialIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('面板材质'));
-    const capacityIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('适用人数'));
-    const functionIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('功能'));
+    const fabricMaterialIndex = findIdx(['面料材质']);
+    const legMaterialIndex = findIdx(['脚材质']);
+    const spongeMaterialIndex = findIdx(['海绵材质']);
+    const frameMaterialIndex = findIdx(['框架材质']);
+    const panelMaterialIndex = findIdx(['面板材质']);
+    const capacityIndex = findIdx(['适用人数']);
+    const ageRangeIndex = findIdx(['适用年龄段']);
+    const functionIndex = findIdx(['功能']);
+    
+    console.log('列索引匹配结果:', {
+        nameIndex, parentModelIndex, categoryIndex, descriptionIndex, featuresIndex,
+        referenceLink1Index, referenceLink2Index, referenceLink3Index, imageUrlIndex,
+        fabricMaterialIndex, legMaterialIndex, spongeMaterialIndex, frameMaterialIndex,
+        panelMaterialIndex, capacityIndex, ageRangeIndex, functionIndex
+    });
+    console.log('Fallback索引:', {
+        parentModelIndexFallback, categoryIndexFallback, featuresIndexFallback
+    });
     
     for (let i = 1; i < data.length; i++) {
         const row = data[i];
         if (!row || row.length === 0) continue;
         
         const name = row[nameIndex]?.toString().trim();
-        const parentModel = row[parentModelIndex]?.toString().trim();
-        const category = normalizeHighlightCategory(row[categoryIndex]?.toString().trim());
-        const description = row[descriptionIndex]?.toString().trim();
-        const features = row[featuresIndex]?.toString().trim();
+        const parentModel = row[parentModelIndexFallback]?.toString().trim();
+        
+        // 根据当前分类处理不同的列结构
+        let category, description, features;
+        const categoryValue = row[categoryIndexFallback]?.toString().trim();
+        
+        
+        if (currentHighlightCategory === 'seating' || isSeatingCategory(categoryValue)) {
+            // 坐具分类：第二列直接是产品分类值，或者自动识别坐具子分类
+            category = categoryValue;
+            description = ''; // 卖点描述为空
+            features = row[featuresIndexFallback]?.toString().trim();
+        } else if (currentHighlightCategory === 'table' || isTableCategory(categoryValue)) {
+            // 桌子分类：第二列是产品分类，第三列是核心卖点
+            category = categoryValue; // 保持具体的桌子子分类
+            description = ''; // 卖点描述为空
+            features = row[featuresIndexFallback]?.toString().trim();
+        } else if (currentHighlightCategory === 'children_chair' || isChildrenChairCategory(categoryValue)) {
+            // 儿童椅分类：第二列是产品分类，第三列是核心卖点
+            category = categoryValue; // 保持具体的儿童椅子分类
+            description = ''; // 卖点描述为空
+            features = row[featuresIndexFallback]?.toString().trim();
+        } else {
+            // 其他分类：使用原有的列结构
+            category = normalizeHighlightCategory(categoryValue);
+            description = row[descriptionIndex]?.toString().trim();
+            features = row[featuresIndex]?.toString().trim();
+        }
         // 处理参考链接（支持多列和单列格式）
         let referenceLinks = ['', '', ''];
         if (referenceLink1Index >= 0 || referenceLink2Index >= 0 || referenceLink3Index >= 0) {
@@ -7749,7 +8127,21 @@ function parseHighlightExcelData(data) {
         }
         let imageUrl = row[imageUrlIndex]?.toString().trim();
         
-        if (!name || !parentModel || !category) continue;
+        // 根据分类进行不同的验证
+        
+        if (isSeatingCategory(category) || isTableCategory(category) || isChildrenChairCategory(category)) {
+            // 坐具、桌子和儿童椅分类：不验证产品名称
+            if (!parentModel || !category) {
+                console.log(`跳过坐具/桌子/儿童椅数据 - 行${i+1}: parentModel="${parentModel}", category="${category}"`);
+                continue;
+            }
+        } else {
+            // 其他分类：验证产品名称
+            if (!name || !parentModel || !category) {
+                console.log(`跳过其他分类数据 - 行${i+1}: name="${name}", parentModel="${parentModel}", category="${category}"`);
+                continue;
+            }
+        }
         
         // 处理图片URL
         if (imageUrl && uploadedHighlightImageMap[imageUrl.toLowerCase()]) {
@@ -7758,7 +8150,7 @@ function parseHighlightExcelData(data) {
         
         const highlight = {
             id: Date.now() + i,
-            name: name,
+            name: (isSeatingCategory(category) || isTableCategory(category) || isChildrenChairCategory(category)) ? '' : name, // 坐具、桌子和儿童椅分类时产品名称为空
             parentModel: parentModel,
             category: category,
             description: description || '',
@@ -7770,22 +8162,39 @@ function parseHighlightExcelData(data) {
         };
         
         // 根据分类添加不同的材质信息
-        if (category === 'seating') {
-            highlight.fabricMaterial = row[fabricMaterialIndex]?.toString().trim() || '';
-            highlight.legMaterial = row[legMaterialIndex]?.toString().trim() || '';
-            highlight.spongeMaterial = row[spongeMaterialIndex]?.toString().trim() || '';
-            highlight.frameMaterial = row[frameMaterialIndex]?.toString().trim() || '';
-            highlight.function = row[functionIndex]?.toString().trim() || '';
-        } else if (category === 'table') {
-            highlight.panelMaterial = row[panelMaterialIndex]?.toString().trim() || '';
-            highlight.legMaterial = row[legMaterialIndex]?.toString().trim() || '';
-            highlight.capacity = row[capacityIndex]?.toString().trim() || '';
-            highlight.function = row[functionIndex]?.toString().trim() || '';
+        if (isSeatingCategory(category)) {
+            // 坐具分类：使用正确的列索引（不需要调整，因为列结构已经正确）
+            highlight.fabricMaterial = fabricMaterialIndex >= 0 ? row[fabricMaterialIndex]?.toString().trim() || '' : '';
+            highlight.legMaterial = legMaterialIndex >= 0 ? row[legMaterialIndex]?.toString().trim() || '' : '';
+            highlight.spongeMaterial = spongeMaterialIndex >= 0 ? row[spongeMaterialIndex]?.toString().trim() || '' : '';
+            highlight.frameMaterial = frameMaterialIndex >= 0 ? row[frameMaterialIndex]?.toString().trim() || '' : '';
+            highlight.function = functionIndex >= 0 ? row[functionIndex]?.toString().trim() || '' : '';
+        } else if (isTableCategory(category)) {
+            // 桌子分类：使用正确的列索引（不需要调整，因为列结构已经正确）
+            highlight.panelMaterial = panelMaterialIndex >= 0 ? row[panelMaterialIndex]?.toString().trim() || '' : '';
+            highlight.legMaterial = legMaterialIndex >= 0 ? row[legMaterialIndex]?.toString().trim() || '' : '';
+            highlight.capacity = capacityIndex >= 0 ? row[capacityIndex]?.toString().trim() || '' : '';
+            highlight.function = functionIndex >= 0 ? row[functionIndex]?.toString().trim() || '' : '';
+        } else if (isChildrenChairCategory(category)) {
+            // 儿童椅分类：使用正确的列索引（不需要调整，因为列结构已经正确）
+            highlight.fabricMaterial = fabricMaterialIndex >= 0 ? row[fabricMaterialIndex]?.toString().trim() || '' : '';
+            highlight.legMaterial = legMaterialIndex >= 0 ? row[legMaterialIndex]?.toString().trim() || '' : '';
+            highlight.spongeMaterial = spongeMaterialIndex >= 0 ? row[spongeMaterialIndex]?.toString().trim() || '' : '';
+            highlight.frameMaterial = frameMaterialIndex >= 0 ? row[frameMaterialIndex]?.toString().trim() || '' : '';
+            highlight.ageRange = ageRangeIndex >= 0 ? row[ageRangeIndex]?.toString().trim() || '' : '';
+            highlight.function = functionIndex >= 0 ? row[functionIndex]?.toString().trim() || '' : '';
         }
         
         highlights.push(highlight);
+        console.log(`成功处理数据 - 行${i+1}:`, {
+            parentModel: highlight.parentModel,
+            category: highlight.category,
+            features: highlight.features.length,
+            isChildrenChair: isChildrenChairCategory(highlight.category)
+        });
     }
     
+    console.log(`Excel解析完成 - 总共处理了 ${highlights.length} 条有效数据`);
     return highlights;
 }
 
@@ -7805,16 +8214,42 @@ function normalizeHighlightCategory(val) {
 // 构建产品卖点上传图片映射
 function buildHighlightUploadedImageMap(imageFiles) {
     const map = {};
-    
+    // 使用对象URL实现同步映射，避免异步FileReader导致Excel先解析而找不到图片
     imageFiles.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            map[file.name.toLowerCase()] = e.target.result;
-        };
-        reader.readAsDataURL(file);
+        try {
+            map[file.name.toLowerCase()] = URL.createObjectURL(file);
+        } catch (_) {}
+    });
+    return map;
+}
+
+// 异步将图片转换为base64并更新highlights数据
+async function convertHighlightImagesToBase64() {
+    const promises = highlights.map(async (highlight) => {
+        if (highlight.imageUrl && highlight.imageUrl.startsWith('blob:')) {
+            try {
+                // 获取blob对象
+                const response = await fetch(highlight.imageUrl);
+                const blob = await response.blob();
+                
+                // 转换为base64
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        highlight.imageUrl = e.target.result; // 更新为base64
+                        resolve();
+                    };
+                    reader.readAsDataURL(blob);
+                });
+            } catch (error) {
+                console.error('转换图片失败:', error);
+            }
+        }
     });
     
-    return map;
+    await Promise.all(promises);
+    // 保存更新后的数据
+    saveHighlights();
 }
 
 // 处理产品卖点拖拽事件
@@ -7872,6 +8307,297 @@ function previewEditSceneImage() {
         // 都没有则隐藏预览
         preview.style.display = 'none';
         previewImg.src = '';
+    }
+}
+
+// ==================== 产品分类管理逻辑 ====================
+
+// 显示产品分类管理模态框
+function showCategoryManagement() {
+    const modal = document.getElementById('categoryManagementModal');
+    modal.classList.add('show');
+    modal.style.display = 'flex';
+    modal.style.pointerEvents = 'auto';
+    
+    // 阻止背景页面滚动
+    preventBodyScroll();
+    
+    // 渲染分类列表
+    renderCategoryList();
+}
+
+// 关闭产品分类管理模态框
+function closeCategoryManagement() {
+    const modal = document.getElementById('categoryManagementModal');
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    modal.style.pointerEvents = '';
+    
+    // 恢复背景页面滚动
+    allowBodyScroll();
+}
+
+// 渲染分类列表
+function renderCategoryList() {
+    const categoryList = document.getElementById('categoryList');
+    if (!categoryList) return;
+    
+    categoryList.innerHTML = '';
+    
+    productCategories.forEach(category => {
+        const categoryItem = document.createElement('div');
+        categoryItem.className = 'category-item';
+        categoryItem.innerHTML = `
+            <div class="category-info">
+                <div class="category-name">${category.name}</div>
+                <div class="category-value">${category.value}</div>
+            </div>
+            <div class="category-actions">
+                <button class="btn btn-sm btn-outline-primary" onclick="editCategory(${category.id})">
+                    <i class="fas fa-edit"></i> 编辑
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteCategory(${category.id})">
+                    <i class="fas fa-trash"></i> 删除
+                </button>
+            </div>
+        `;
+        categoryList.appendChild(categoryItem);
+    });
+}
+
+// 显示新增分类模态框
+function showAddCategoryModal() {
+    const modal = document.getElementById('addCategoryModal');
+    modal.classList.add('show');
+    modal.style.display = 'flex';
+    modal.style.pointerEvents = 'auto';
+    
+    // 阻止背景页面滚动
+    preventBodyScroll();
+    
+    // 清空表单
+    const form = document.getElementById('addCategoryForm');
+    if (form) form.reset();
+}
+
+// 关闭新增分类模态框
+function closeAddCategoryModal() {
+    const modal = document.getElementById('addCategoryModal');
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    modal.style.pointerEvents = '';
+    
+    // 恢复背景页面滚动
+    allowBodyScroll();
+}
+
+// 编辑分类
+function editCategory(id) {
+    const category = productCategories.find(c => c.id === id);
+    if (!category) return;
+    
+    // 填充编辑表单
+    document.getElementById('editCategoryId').value = category.id;
+    document.getElementById('editCategoryName').value = category.name;
+    document.getElementById('editCategoryValue').value = category.value;
+    
+    // 显示编辑模态框
+    const modal = document.getElementById('editCategoryModal');
+    modal.classList.add('show');
+    modal.style.display = 'flex';
+    modal.style.pointerEvents = 'auto';
+    
+    // 阻止背景页面滚动
+    preventBodyScroll();
+}
+
+// 关闭编辑分类模态框
+function closeEditCategoryModal() {
+    const modal = document.getElementById('editCategoryModal');
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    modal.style.pointerEvents = '';
+    
+    // 恢复背景页面滚动
+    allowBodyScroll();
+}
+
+// 删除分类
+function deleteCategory(id) {
+    if (confirm('确定要删除这个分类吗？删除后相关的产品数据可能会受影响。')) {
+        // 从数组中删除
+        productCategories = productCategories.filter(c => c.id !== id);
+        
+        // 重新渲染列表
+        renderCategoryList();
+        
+        // 更新子分类选择器
+        updateSubcategorySelectors();
+        
+        // 保存到本地存储
+        saveProductCategories();
+        
+        alert('分类已删除');
+    }
+}
+
+// 处理新增分类表单提交
+function handleAddCategory(e) {
+    if (e) e.preventDefault();
+    
+    const name = document.getElementById('addCategoryName').value.trim();
+    const value = document.getElementById('addCategoryValue').value.trim();
+    
+    if (!name || !value) {
+        alert('请填写完整的分类信息');
+        return;
+    }
+    
+    // 检查是否已存在相同的名称或值
+    if (productCategories.some(c => c.name === name || c.value === value)) {
+        alert('分类名称或值已存在，请使用其他名称');
+        return;
+    }
+    
+    // 添加新分类
+    const newCategory = {
+        id: Date.now(),
+        name: name,
+        value: value
+    };
+    
+    productCategories.push(newCategory);
+    
+    // 重新渲染列表
+    renderCategoryList();
+    
+    // 更新子分类选择器
+    updateSubcategorySelectors();
+    
+    // 保存到本地存储
+    saveProductCategories();
+    
+    // 关闭模态框
+    closeAddCategoryModal();
+    
+    alert('分类已添加');
+}
+
+// 处理编辑分类表单提交
+function handleEditCategory(e) {
+    if (e) e.preventDefault();
+    
+    const id = parseInt(document.getElementById('editCategoryId').value);
+    const name = document.getElementById('editCategoryName').value.trim();
+    const value = document.getElementById('editCategoryValue').value.trim();
+    
+    if (!name || !value) {
+        alert('请填写完整的分类信息');
+        return;
+    }
+    
+    // 检查是否已存在相同的名称或值（排除当前编辑的分类）
+    if (productCategories.some(c => c.id !== id && (c.name === name || c.value === value))) {
+        alert('分类名称或值已存在，请使用其他名称');
+        return;
+    }
+    
+    // 更新分类
+    const category = productCategories.find(c => c.id === id);
+    if (category) {
+        category.name = name;
+        category.value = value;
+    }
+    
+    // 重新渲染列表
+    renderCategoryList();
+    
+    // 更新子分类选择器
+    updateSubcategorySelectors();
+    
+    // 保存到本地存储
+    saveProductCategories();
+    
+    // 关闭模态框
+    closeEditCategoryModal();
+    
+    alert('分类已更新');
+}
+
+// 更新子分类选择器
+function updateSubcategorySelectors() {
+    // 这个函数现在用于更新产品分类选择器
+    updateProductCategorySelectors();
+}
+
+// 更新产品分类选择器
+function updateProductCategorySelectors() {
+    const addSelect = document.getElementById('addHighlightCategory');
+    const editSelect = document.getElementById('editHighlightCategory');
+    
+    [addSelect, editSelect].forEach(select => {
+        if (select) {
+            // 清空现有选项（保留第一个默认选项）
+            while (select.children.length > 1) {
+                select.removeChild(select.lastChild);
+            }
+            
+            // 添加新的分类选项
+            productCategories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.value;
+                option.textContent = category.name;
+                select.appendChild(option);
+            });
+        }
+    });
+}
+
+// 保存产品分类到本地存储
+function saveProductCategories() {
+    try {
+        localStorage.setItem('productCategories_v1', JSON.stringify(productCategories));
+    } catch (error) {
+        console.error('保存产品分类失败:', error);
+    }
+}
+
+// 加载产品分类从本地存储
+function loadProductCategories() {
+    try {
+        const saved = localStorage.getItem('productCategories_v1');
+        if (saved) {
+            productCategories = JSON.parse(saved);
+        }
+        
+        // 确保包含儿童椅分类
+        const hasChildrenChair = productCategories.some(cat => cat.value === 'children_chair');
+        if (!hasChildrenChair) {
+            productCategories.push({ id: 6, name: '儿童椅', value: 'children_chair' });
+        }
+        
+        // 确保包含桌子分类
+        const hasTable = productCategories.some(cat => cat.value === 'table');
+        if (!hasTable) {
+            productCategories.push({ id: 5, name: '桌子', value: 'table' });
+        }
+        
+        // 确保包含所有坐具分类
+        const seatingCategories = [
+            { id: 1, name: '休闲椅', value: 'lounge_chair' },
+            { id: 2, name: '长凳', value: 'bench' },
+            { id: 3, name: '沙发', value: 'sofa' },
+            { id: 4, name: '升降吧椅', value: 'adjustable_bar_stool' }
+        ];
+        
+        seatingCategories.forEach(seatingCat => {
+            const hasSeatingCategory = productCategories.some(cat => cat.value === seatingCat.value);
+            if (!hasSeatingCategory) {
+                productCategories.push(seatingCat);
+            }
+        });
+    } catch (error) {
+        console.error('加载产品分类失败:', error);
     }
 }
 
