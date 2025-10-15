@@ -10176,11 +10176,25 @@ async function uploadToServer(silent = false) {
                     showSyncNotification(`数据上传成功！更新了${updatedCount}条数据`);
                 }
             } else {
+                if (!silent) {
+                    showSyncNotification('数据已是最新，无需上传', 'info');
+                }
                 console.log('数据已是最新，无需上传');
             }
         } else {
-            // 如果没有服务器响应信息，则不显示成功提醒
-            console.log('数据上传完成，但无法确定是否有实际更新');
+            // 如果没有服务器响应信息，根据本地数据判断
+            const totalDataCount = uploadStats.fabrics + uploadStats.colorboards + uploadStats.highlights + 
+                                  uploadStats.materials + uploadStats.materialOptions + 
+                                  uploadStats.designPointCategories + uploadStats.productCategories;
+            
+            if (!silent) {
+                if (totalDataCount > 0) {
+                    showSyncNotification(`数据上传成功！上传了${totalDataCount}条数据`);
+                } else {
+                    showSyncNotification('没有数据需要上传', 'info');
+                }
+            }
+            console.log('数据上传完成，总数据量:', totalDataCount);
         }
         
         return true;
@@ -10306,9 +10320,19 @@ async function testConnection() {
 
 // 手动上传到服务器（显示提醒）
 async function manualUploadToServer() {
-    const success = await uploadToServer(false); // 非静默模式，显示提醒
-    if (success) {
-        console.log('手动上传完成');
+    try {
+        updateSyncStatus('syncing', '上传数据中...');
+        const success = await uploadToServer(false); // 非静默模式，显示提醒
+        if (success) {
+            updateSyncStatus('online', '上传完成');
+            console.log('手动上传完成');
+        } else {
+            updateSyncStatus('offline', '上传失败');
+        }
+    } catch (error) {
+        console.error('手动上传失败:', error);
+        updateSyncStatus('offline', '上传失败');
+        showSyncNotification(`上传失败: ${error.message}`, 'error');
     }
 }
 
