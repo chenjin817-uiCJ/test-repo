@@ -66,6 +66,20 @@
             z-index: 12 !important; /* 表头层级最高 */
         }
 
+        /* 固定表头样式 */
+        .notion-table thead th {
+            position: sticky !important;
+            top: 0 !important;
+            background-color: #f8f9fa !important;
+            z-index: 10 !important;
+            border-bottom: 2px solid #e0e0e0 !important;
+        }
+
+        /* 确保固定表头的冻结列有更高的层级 */
+        .notion-table thead th.sticky-col {
+            z-index: 15 !important; /* 冻结列表头层级最高 */
+        }
+
         /* 上传选项样式 */
         .upload-options {
             margin: 15px 0;
@@ -143,6 +157,79 @@
         .notion-table th.resizing,
         .notion-table td.resizing {
             background-color: #f8f9fa;
+        }
+
+        /* 分类选择器样式 */
+        .category-select-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-select-container select {
+            flex: 1;
+        }
+
+        .category-select-container button {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 分类管理样式 */
+        .category-management-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .category-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .category-item:hover {
+            background-color: #e9ecef;
+        }
+
+        .category-info {
+            flex: 1;
+        }
+
+        .category-name {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 4px;
+        }
+
+        .category-value {
+            font-size: 12px;
+            color: #6c757d;
+            font-family: monospace;
+        }
+
+        .category-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .category-actions button {
+            padding: 6px 12px;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -442,6 +529,9 @@
                         </button>
                         <button class="btn btn-secondary category-btn" data-category="table" onclick="setHighlightCategoryFilter('table', event)">
                             <i class="fas fa-table"></i> 桌子
+                        </button>
+                        <button class="btn btn-secondary category-btn" data-category="children_chair" onclick="setHighlightCategoryFilter('children_chair', event)">
+                            <i class="fas fa-baby"></i> 儿童椅
                         </button>
                     </div>
                 </div>
@@ -1130,7 +1220,8 @@
                 </div>
                 <div class="modal-body">
                     <form id="addHighlightForm">
-                        <div class="form-group">
+                        <!-- 产品名称字段 - 仅对非坐具显示 -->
+                        <div class="form-group" id="addProductNameField" style="display: none;">
                             <label for="addHighlightName">产品名称</label>
                             <input type="text" id="addHighlightName" placeholder="例如：现代简约沙发" required>
                         </div>
@@ -1140,15 +1231,15 @@
                         </div>
                         <div class="form-group">
                             <label for="addHighlightCategory">产品分类</label>
-                            <select id="addHighlightCategory" required>
-                                <option value="">请选择产品分类</option>
-                                <option value="seating">坐具</option>
-                                <option value="table">桌子</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="addHighlightDescription">卖点描述</label>
-                            <textarea id="addHighlightDescription" rows="3" placeholder="详细描述产品的主要卖点和特色..." required></textarea>
+                            <div class="category-select-container">
+                                <select id="addHighlightCategory" required>
+                                    <option value="">请选择产品分类</option>
+                                    <!-- 选项将通过JavaScript动态生成 -->
+                                </select>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="showCategoryManagement()" title="管理分类">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="addHighlightFeatures">核心卖点（用逗号分隔）</label>
@@ -1194,6 +1285,42 @@
                             <div class="form-group">
                                 <label for="addHighlightFunction">功能</label>
                                 <input type="text" id="addHighlightFunction" placeholder="例如：可调节靠背">
+                            </div>
+                        </div>
+                        
+                        <!-- 儿童椅材质信息 - 仅对儿童椅显示 -->
+                        <div id="addChildrenChairMaterialFields" style="display: none;">
+                            <div class="form-group">
+                                <label for="addHighlightChildrenChairFabricMaterial">面料材质</label>
+                                <select id="addHighlightChildrenChairFabricMaterial">
+                                    <option value="">请选择面料材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="addHighlightChildrenChairLegMaterial">脚材质</label>
+                                <select id="addHighlightChildrenChairLegMaterial">
+                                    <option value="">请选择脚材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="addHighlightChildrenChairSpongeMaterial">海绵材质</label>
+                                <select id="addHighlightChildrenChairSpongeMaterial">
+                                    <option value="">请选择海绵材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="addHighlightChildrenChairFrameMaterial">框架材质</label>
+                                <select id="addHighlightChildrenChairFrameMaterial">
+                                    <option value="">请选择框架材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="addHighlightChildrenChairAgeRange">适用年龄段</label>
+                                <input type="text" id="addHighlightChildrenChairAgeRange" placeholder="例如：3-6岁">
+                            </div>
+                            <div class="form-group">
+                                <label for="addHighlightChildrenChairFunction">功能</label>
+                                <input type="text" id="addHighlightChildrenChairFunction" placeholder="例如：可调节高度">
                             </div>
                         </div>
                         
@@ -1281,26 +1408,24 @@
                 <div class="modal-body">
                     <form id="editHighlightForm">
                         <input type="hidden" id="editHighlightId">
-                        <div class="form-group">
-                            <label for="editHighlightName">产品名称</label>
-                            <input type="text" id="editHighlightName" placeholder="例如：现代简约沙发" required>
-                        </div>
+                        
                         <div class="form-group">
                             <label for="editHighlightParentModel">父款型号</label>
                             <input type="text" id="editHighlightParentModel" placeholder="例如：SF-2024-001" required>
                         </div>
                         <div class="form-group">
                             <label for="editHighlightCategory">产品分类</label>
-                            <select id="editHighlightCategory" required>
-                                <option value="">请选择产品分类</option>
-                                <option value="seating">坐具</option>
-                                <option value="table">桌子</option>
-                            </select>
+                            <div class="category-select-container">
+                                <select id="editHighlightCategory" required>
+                                    <option value="">请选择产品分类</option>
+                                    <!-- 选项将通过JavaScript动态生成 -->
+                                </select>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="showCategoryManagement()" title="管理分类">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="editHighlightDescription">卖点描述</label>
-                            <textarea id="editHighlightDescription" rows="3" placeholder="详细描述产品的主要卖点和特色..." required></textarea>
-                        </div>
+                        
                         <div class="form-group">
                             <label for="editHighlightFeatures">核心卖点（用逗号分隔）</label>
                             <input type="text" id="editHighlightFeatures" placeholder="例如：舒适耐用,现代设计,易清洁">
@@ -1345,6 +1470,42 @@
                             <div class="form-group">
                                 <label for="editHighlightFunction">功能</label>
                                 <input type="text" id="editHighlightFunction" placeholder="例如：可调节靠背">
+                            </div>
+                        </div>
+                        
+                        <!-- 儿童椅材质信息 - 仅对儿童椅显示 -->
+                        <div id="editChildrenChairMaterialFields" style="display: none;">
+                            <div class="form-group">
+                                <label for="editHighlightChildrenChairFabricMaterial">面料材质</label>
+                                <select id="editHighlightChildrenChairFabricMaterial">
+                                    <option value="">请选择面料材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editHighlightChildrenChairLegMaterial">脚材质</label>
+                                <select id="editHighlightChildrenChairLegMaterial">
+                                    <option value="">请选择脚材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editHighlightChildrenChairSpongeMaterial">海绵材质</label>
+                                <select id="editHighlightChildrenChairSpongeMaterial">
+                                    <option value="">请选择海绵材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editHighlightChildrenChairFrameMaterial">框架材质</label>
+                                <select id="editHighlightChildrenChairFrameMaterial">
+                                    <option value="">请选择框架材质</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editHighlightChildrenChairAgeRange">适用年龄段</label>
+                                <input type="text" id="editHighlightChildrenChairAgeRange" placeholder="例如：3-6岁">
+                            </div>
+                            <div class="form-group">
+                                <label for="editHighlightChildrenChairFunction">功能</label>
+                                <input type="text" id="editHighlightChildrenChairFunction" placeholder="例如：可调节高度">
                             </div>
                         </div>
                         
@@ -1482,6 +1643,18 @@
                         </div>
                         
                         <div class="form-group">
+                            <label for="editDesignPointCategory">设计点分类</label>
+                            <div class="category-select-container">
+                                <select id="editDesignPointCategory" required>
+                                    <option value="">请选择设计点分类</option>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="showDesignPointCategoryManagement()" title="管理分类">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
                             <label for="editDesignPointDescription">设计点描述</label>
                             <textarea id="editDesignPointDescription" rows="3" placeholder="详细描述这个设计点的特点和优势..." required></textarea>
                         </div>
@@ -1505,6 +1678,104 @@
                                 <i class="fas fa-trash"></i> 删除设计点
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="closeDesignPointEditModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存修改
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设计点分类管理模态框 -->
+        <div class="modal" id="designPointCategoryManagementModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>设计点分类管理</h2>
+                    <button class="close-btn" onclick="closeDesignPointCategoryManagement()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="category-management-header">
+                        <button class="btn btn-primary" onclick="showAddDesignPointCategoryModal()">
+                            <i class="fas fa-plus"></i> 新增分类
+                        </button>
+                    </div>
+                    
+                    <div class="category-list" id="designPointCategoryList">
+                        <!-- 分类列表将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 新增设计点分类模态框 -->
+        <div class="modal" id="addDesignPointCategoryModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>新增设计点分类</h2>
+                    <button class="close-btn" onclick="closeAddDesignPointCategoryModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addDesignPointCategoryForm">
+                        <div class="form-group">
+                            <label for="addDesignPointCategoryName">分类名称</label>
+                            <input type="text" id="addDesignPointCategoryName" placeholder="例如：外观设计" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="addDesignPointCategoryColor">分类颜色</label>
+                            <div class="color-picker-container">
+                                <input type="color" id="addDesignPointCategoryColor" value="#FF6B6B">
+                                <span class="color-preview" id="addDesignPointCategoryColorPreview"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeAddDesignPointCategoryModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存分类
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑设计点分类模态框 -->
+        <div class="modal" id="editDesignPointCategoryModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>编辑设计点分类</h2>
+                    <button class="close-btn" onclick="closeEditDesignPointCategoryModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editDesignPointCategoryForm">
+                        <input type="hidden" id="editDesignPointCategoryId">
+                        
+                        <div class="form-group">
+                            <label for="editDesignPointCategoryName">分类名称</label>
+                            <input type="text" id="editDesignPointCategoryName" placeholder="例如：外观设计" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editDesignPointCategoryColor">分类颜色</label>
+                            <div class="color-picker-container">
+                                <input type="color" id="editDesignPointCategoryColor" value="#FF6B6B">
+                                <span class="color-preview" id="editDesignPointCategoryColorPreview"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" onclick="deleteDesignPointCategory()">
+                                <i class="fas fa-trash"></i> 删除分类
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="closeEditDesignPointCategoryModal()">取消</button>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-check"></i> 保存修改
                             </button>
@@ -1548,6 +1819,100 @@
                                 <i class="fas fa-trash"></i> 删除场景图
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="closeSceneImageEditModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存修改
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 产品分类管理模态框 -->
+        <div class="modal" id="categoryManagementModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>产品分类管理</h2>
+                    <button class="close-btn" onclick="closeCategoryManagement()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="category-management-header">
+                        <button class="btn btn-primary" onclick="showAddCategoryModal()">
+                            <i class="fas fa-plus"></i> 新增分类
+                        </button>
+                    </div>
+                    
+                    <div class="category-list" id="categoryList">
+                        <!-- 分类列表将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 新增分类模态框 -->
+        <div class="modal" id="addCategoryModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>新增产品分类</h2>
+                    <button class="close-btn" onclick="closeAddCategoryModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addCategoryForm">
+                        <div class="form-group">
+                            <label for="addCategoryName">分类名称</label>
+                            <input type="text" id="addCategoryName" placeholder="例如：餐椅" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="addCategoryValue">分类值</label>
+                            <input type="text" id="addCategoryValue" placeholder="例如：dining_chair" required>
+                            <small class="form-help">用于系统识别，建议使用英文和下划线</small>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeAddCategoryModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> 保存分类
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑分类模态框 -->
+        <div class="modal" id="editCategoryModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>编辑产品分类</h2>
+                    <button class="close-btn" onclick="closeEditCategoryModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editCategoryForm">
+                        <input type="hidden" id="editCategoryId">
+                        
+                        <div class="form-group">
+                            <label for="editCategoryName">分类名称</label>
+                            <input type="text" id="editCategoryName" placeholder="例如：餐椅" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editCategoryValue">分类值</label>
+                            <input type="text" id="editCategoryValue" placeholder="例如：dining_chair" required>
+                            <small class="form-help">用于系统识别，建议使用英文和下划线</small>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" onclick="deleteCategory()">
+                                <i class="fas fa-trash"></i> 删除分类
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="closeEditCategoryModal()">取消</button>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-check"></i> 保存修改
                             </button>
