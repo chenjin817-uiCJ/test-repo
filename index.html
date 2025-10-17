@@ -330,6 +330,8 @@
                         <button class="btn btn-secondary category-btn" data-category="wood" onclick="setCategoryFilter('wood', event)">木头材质</button>
                         <button class="btn btn-secondary category-btn" data-category="fabric" onclick="setCategoryFilter('fabric', event)">面料材质</button>
                         <button class="btn btn-secondary category-btn" data-category="foam" onclick="setCategoryFilter('foam', event)">海绵材质</button>
+                        <button class="btn btn-secondary category-btn" data-category="metal" onclick="setCategoryFilter('metal', event)">金属材质</button>
+                        <button class="btn btn-secondary category-btn" data-category="other" onclick="setCategoryFilter('other', event)">其他材质</button>
                     </div>
                 </div>
             </div>
@@ -549,12 +551,30 @@
             <!-- 产品卖点Gallery -->
             <main class="highlights-content">
                 <div class="container">
-                    <div class="highlights-gallery" id="highlightsGallery">
-                        <!-- 产品卖点卡片将通过JavaScript动态生成 -->
-                    </div>
-                    <div class="no-results" id="highlightsNoResults" style="display: none;">
-                        <i class="fas fa-star"></i>
-                        <p>该分类下暂无产品卖点数据</p>
+                    <div class="highlights-layout">
+                        <!-- 左侧：产品卖点列表 -->
+                        <div class="highlights-main">
+                            <div class="highlights-gallery" id="highlightsGallery">
+                                <!-- 产品卖点卡片将通过JavaScript动态生成 -->
+                            </div>
+                            <div class="no-results" id="highlightsNoResults" style="display: none;">
+                                <i class="fas fa-star"></i>
+                                <p>该分类下暂无产品卖点数据</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 右侧：材质预览面板 -->
+                        <div class="material-preview-panel" id="materialPreviewPanel" style="display: none;">
+                            <div class="preview-header">
+                                <h3 id="previewTitle">材质详情</h3>
+                                <button class="preview-close-btn" onclick="closeMaterialPreview()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="preview-content" id="previewContent">
+                                <!-- 材质详情内容将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>
@@ -581,6 +601,12 @@
                         </button>
                         <button class="btn btn-secondary category-btn" data-category="foam" onclick="setOptionsCategoryFilter('foam', event)">
                             <i class="fas fa-cube"></i> 海绵材质
+                        </button>
+                        <button class="btn btn-secondary category-btn" data-category="metal" onclick="setOptionsCategoryFilter('metal', event)">
+                            <i class="fas fa-cog"></i> 金属材质
+                        </button>
+                        <button class="btn btn-secondary category-btn" data-category="other" onclick="setOptionsCategoryFilter('other', event)">
+                            <i class="fas fa-ellipsis-h"></i> 其他材质
                         </button>
                     </div>
                 </div>
@@ -680,6 +706,8 @@
                                 <option value="fabric">面料材质</option>
                                 <option value="wood">木头材质</option>
                                 <option value="foam">海绵材质</option>
+                                <option value="metal">金属材质</option>
+                                <option value="other">其他材质</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -746,6 +774,8 @@
                                 <option value="fabric">面料材质</option>
                                 <option value="wood">木头材质</option>
                                 <option value="foam">海绵材质</option>
+                                <option value="metal">金属材质</option>
+                                <option value="other">其他材质</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1154,6 +1184,8 @@
                                 <option value="fabric">面料材质</option>
                                 <option value="wood">木头材质</option>
                                 <option value="foam">海绵材质</option>
+                                <option value="metal">金属材质</option>
+                                <option value="other">其他材质</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1188,6 +1220,8 @@
                                 <option value="fabric">面料材质</option>
                                 <option value="wood">木头材质</option>
                                 <option value="foam">海绵材质</option>
+                                <option value="metal">金属材质</option>
+                                <option value="other">其他材质</option>
                             </select>
                         </div>
                         <div class="form-group">
