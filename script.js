@@ -1,7 +1,7 @@
 // 全局变量
 let materials = [];
 let filteredMaterials = [];
-let categoryFilter = 'all'; // all | wood | fabric | foam
+let categoryFilter = 'all'; // all | wood | fabric | foam | metal | other
 let uploadedImageMap = {}; // filename(lowercased) -> dataURL (base64) or URL
 let pendingExcelFile = null; // remember excel if images come first
 
@@ -129,7 +129,7 @@ const sampleMaterials = [
     {
         id: 4,
         name: "玻璃",
-        category: "glass",
+        category: "other",
         description: "透明美观，空间感强，现代简约风格",
         features: ["透明美观", "空间感强", "易清洁", "现代感"],
         imageUrl: "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?q=80&w=1200&auto=format&fit=crop"
@@ -153,7 +153,7 @@ const sampleMaterials = [
     {
         id: 7,
         name: "石材",
-        category: "stone",
+        category: "other",
         description: "天然石材，质感丰富，坚固耐用，适合台面和装饰",
         features: ["天然", "坚固耐用", "质感丰富", "易清洁"],
         imageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1200&auto=format&fit=crop"
@@ -2963,12 +2963,14 @@ function selectDynamicName(name, type) {
 function inferCategoryByName(name) {
     const n = (name || '').toLowerCase();
     const woodKeywords = ['木', '实木', '人造板', '板', '竹', '橡木', '橡胶木', '胡桃木'];
-    const metalKeywords = ['铁', '钢', '铝', '金属', '不锈钢'];
+    const metalKeywords = ['铁', '钢', '铝', '金属', '不锈钢', '铜', '合金'];
     const foamKeywords = ['海绵', '泡沫', '聚氨酯', '记忆棉', '乳胶'];
+    const otherKeywords = ['玻璃', '石材', '大理石', '花岗岩', '陶瓷', '塑料', '树脂'];
     
     if (woodKeywords.some(k => n.includes(k))) return 'wood';
     if (metalKeywords.some(k => n.includes(k))) return 'metal';
     if (foamKeywords.some(k => n.includes(k))) return 'foam';
+    if (otherKeywords.some(k => n.includes(k))) return 'other';
     return 'fabric';
 }
 
@@ -3043,7 +3045,9 @@ function getCategoryLabel(category) {
     const labels = {
         'fabric': '面料材质',
         'wood': '木头材质',
-        'foam': '海绵材质'
+        'foam': '海绵材质',
+        'metal': '金属材质',
+        'other': '其他材质'
     };
     return labels[category] || category;
 }
