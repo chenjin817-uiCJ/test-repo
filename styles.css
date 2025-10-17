@@ -984,21 +984,69 @@ body {
     min-height: calc(100vh - 300px);
 }
 
-/* 材质链接样式 */
+/* 材质链接样式 - Notion Relation风格 */
 .material-link {
-    color: #3498db;
+    color: #37352f;
     text-decoration: none;
     cursor: pointer;
-    border-bottom: 1px dashed #3498db;
-    transition: all 0.3s ease;
+    background-color: #f1f1ef;
+    border: 1px solid #e9e9e7;
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: inline-block;
+    position: relative;
+    margin: 0 2px;
 }
 
 .material-link:hover {
-    color: #2980b9;
-    border-bottom: 1px solid #2980b9;
-    background-color: #f8f9fa;
-    padding: 1px 3px;
-    border-radius: 3px;
+    background-color: #e9e9e7;
+    border-color: #d3d3d1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.material-link:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* 添加小图标表示这是可点击的关系 */
+.material-link::after {
+    content: "↗";
+    margin-left: 4px;
+    font-size: 0.8em;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.material-link:hover::after {
+    opacity: 1;
+}
+
+/* 材质链接在详情页面中的特殊样式 */
+.detail-section .material-link {
+    margin: 0 4px;
+    font-size: 0.95em;
+}
+
+/* 材质链接的焦点状态（键盘导航） */
+.material-link:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* 材质链接的加载状态 */
+.material-link.loading {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.material-link.loading::after {
+    content: "⏳";
+    animation: spin 1s linear infinite;
 }
 
 /* 参考链接容器样式 */
