@@ -105,6 +105,7 @@ const sampleMaterials = [
     {
         id: 1,
         name: "实木",
+        category: "wood",
         description: "天然木材，环保健康，纹理自然美观",
         features: ["环保", "耐用", "自然纹理", "可修复"],
         imageUrl: "https://images.unsplash.com/photo-1505692952047-1a78307da8f2?q=80&w=1200&auto=format&fit=crop"
@@ -112,6 +113,7 @@ const sampleMaterials = [
     {
         id: 2,
         name: "人造板",
+        category: "wood",
         description: "由木材碎片或纤维制成，价格实惠，性能稳定",
         features: ["价格实惠", "尺寸稳定", "易加工", "防潮"],
         imageUrl: "https://images.unsplash.com/photo-1582582429416-67fbd0bfcac7?q=80&w=1200&auto=format&fit=crop"
@@ -119,6 +121,7 @@ const sampleMaterials = [
     {
         id: 3,
         name: "金属",
+        category: "metal",
         description: "坚固耐用，现代感强，易于清洁维护",
         features: ["坚固耐用", "现代感", "易清洁", "防火"],
         imageUrl: "https://images.unsplash.com/photo-1541534401786-2077eed87a72?q=80&w=1200&auto=format&fit=crop"
@@ -126,6 +129,7 @@ const sampleMaterials = [
     {
         id: 4,
         name: "玻璃",
+        category: "glass",
         description: "透明美观，空间感强，现代简约风格",
         features: ["透明美观", "空间感强", "易清洁", "现代感"],
         imageUrl: "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?q=80&w=1200&auto=format&fit=crop"
@@ -133,6 +137,7 @@ const sampleMaterials = [
     {
         id: 5,
         name: "皮革",
+        category: "fabric",
         description: "质感奢华，舒适耐用，彰显品味",
         features: ["质感奢华", "舒适耐用", "易清洁", "透气性好"],
         imageUrl: "https://images.unsplash.com/photo-1616628188466-5181ed1cbab4?q=80&w=1200&auto=format&fit=crop"
@@ -140,6 +145,7 @@ const sampleMaterials = [
     {
         id: 6,
         name: "布艺",
+        category: "fabric",
         description: "柔软舒适，色彩丰富，价格亲民",
         features: ["柔软舒适", "色彩丰富", "价格亲民", "易更换"],
         imageUrl: "https://images.unsplash.com/photo-1501045661006-fcebe0257c3f?q=80&w=1200&auto=format&fit=crop"
@@ -147,6 +153,7 @@ const sampleMaterials = [
     {
         id: 7,
         name: "石材",
+        category: "stone",
         description: "天然石材，质感丰富，坚固耐用，适合台面和装饰",
         features: ["天然", "坚固耐用", "质感丰富", "易清洁"],
         imageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1200&auto=format&fit=crop"
@@ -154,9 +161,42 @@ const sampleMaterials = [
     {
         id: 8,
         name: "橡胶木",
+        category: "wood",
         description: "橡胶木材质，质地坚硬，纹理清晰，环保可持续，适合制作家具",
         features: ["环保", "坚硬", "纹理清晰", "可持续"],
         imageUrl: "https://images.unsplash.com/photo-1505692952047-1a78307da8f2?q=80&w=1200&auto=format&fit=crop"
+    },
+    {
+        id: 9,
+        name: "多层海绵",
+        category: "foam",
+        description: "多层海绵材质，提供更好的支撑性和舒适度，回弹性能优异",
+        features: ["多层结构", "支撑性好", "回弹优异", "舒适耐用"],
+        imageUrl: "https://images.unsplash.com/photo-1582582429416-67fbd0bfcac7?q=80&w=1200&auto=format&fit=crop"
+    },
+    {
+        id: 10,
+        name: "铁",
+        category: "metal",
+        description: "铁质材料，坚固耐用，承重能力强，适合制作家具脚架",
+        features: ["坚固耐用", "承重强", "易加工", "成本低"],
+        imageUrl: "https://images.unsplash.com/photo-1541534401786-2077eed87a72?q=80&w=1200&auto=format&fit=crop"
+    },
+    {
+        id: 11,
+        name: "其他皮类",
+        category: "fabric",
+        description: "其他类型的皮革材质，具有独特的质感和外观，适合特殊设计需求",
+        features: ["独特质感", "耐用", "易清洁", "时尚"],
+        imageUrl: "https://images.unsplash.com/photo-1616628188466-5181ed1cbab4?q=80&w=1200&auto=format&fit=crop"
+    },
+    {
+        id: 12,
+        name: "麻布",
+        category: "fabric",
+        description: "麻布面料，天然纤维材质，透气性好，质感自然，适合夏季使用",
+        features: ["天然纤维", "透气", "质感自然", "环保"],
+        imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=1200&auto=format&fit=crop"
     }
 ];
 
@@ -268,6 +308,57 @@ const sampleFabrics = [
         weight: "160g/m²",
         width: "155cm",
         color: "浅绿色",
+        imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=1200&auto=format&fit=crop"
+    },
+    {
+        id: 7,
+        code: "F007",
+        name: "其他皮类",
+        description: "其他类型的皮革材质，具有独特的质感和外观，适合特殊设计需求",
+        features: ["独特质感", "耐用", "易清洁", "时尚"],
+        category: "website",
+        price: 0,
+        currency: "CNY",
+        manufacturer: "皮革供应商",
+        classification: "皮革",
+        composition: "其他皮革",
+        weight: "0g/m²",
+        width: "0cm",
+        color: "多种颜色",
+        imageUrl: "https://images.unsplash.com/photo-1616628188466-5181ed1cbab4?q=80&w=1200&auto=format&fit=crop"
+    },
+    {
+        id: 8,
+        code: "F008",
+        name: "雪尼尔",
+        description: "雪尼尔面料，具有独特的绒面质感，触感柔软舒适，保暖性能优异",
+        features: ["绒面质感", "柔软舒适", "保暖", "美观"],
+        category: "wayfair",
+        price: 0,
+        currency: "CNY",
+        manufacturer: "面料供应商",
+        classification: "雪尼尔",
+        composition: "雪尼尔纤维",
+        weight: "0g/m²",
+        width: "0cm",
+        color: "多种颜色",
+        imageUrl: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=1200&auto=format&fit=crop"
+    },
+    {
+        id: 9,
+        code: "F009",
+        name: "麻布",
+        description: "麻布面料，天然纤维材质，透气性好，质感自然，适合夏季使用",
+        features: ["天然纤维", "透气", "质感自然", "环保"],
+        category: "website",
+        price: 0,
+        currency: "CNY",
+        manufacturer: "面料供应商",
+        classification: "麻布",
+        composition: "100%麻纤维",
+        weight: "0g/m²",
+        width: "0cm",
+        color: "多种颜色",
         imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=1200&auto=format&fit=crop"
     }
 ];
@@ -489,6 +580,11 @@ function initializeApp() {
         const stored = localStorage.getItem('materials_v1');
         if (stored) {
             materials = JSON.parse(stored);
+            // 确保所有材质都有category字段
+            materials = materials.map(m => ({
+                ...m,
+                category: m.category || inferCategoryByName(m.name)
+            }));
         } else {
             materials = sampleMaterials.map(m => ({
                 ...m,
@@ -544,6 +640,53 @@ function initializeApp() {
             fabrics = [...sampleFabrics];
             console.log('使用默认面料数据，数据条数:', fabrics.length);
         }
+        
+        // 确保新添加的面料数据存在
+        const ensureFabricExists = (fabricName, fabricData) => {
+            const exists = fabrics.some(f => f.name === fabricName);
+            if (!exists) {
+                fabrics.push(fabricData);
+                console.log(`添加缺失的面料: ${fabricName}`);
+            }
+        };
+        
+        // 确保"其他皮类"存在
+        ensureFabricExists("其他皮类", {
+            id: 7,
+            code: "F007",
+            name: "其他皮类",
+            description: "其他类型的皮革材质，具有独特的质感和外观，适合特殊设计需求",
+            features: ["独特质感", "耐用", "易清洁", "时尚"],
+            category: "website",
+            price: 0,
+            currency: "CNY",
+            manufacturer: "皮革供应商",
+            classification: "皮革",
+            composition: "其他皮革",
+            weight: "0g/m²",
+            width: "0cm",
+            color: "多种颜色",
+            imageUrl: "https://images.unsplash.com/photo-1616628188466-5181ed1cbab4?q=80&w=1200&auto=format&fit=crop"
+        });
+        
+        // 确保"麻布"存在
+        ensureFabricExists("麻布", {
+            id: 9,
+            code: "F009",
+            name: "麻布",
+            description: "麻布面料，天然纤维材质，透气性好，质感自然，适合夏季使用",
+            features: ["天然纤维", "透气", "质感自然", "环保"],
+            category: "website",
+            price: 0,
+            currency: "CNY",
+            manufacturer: "面料供应商",
+            classification: "麻布",
+            composition: "100%麻纤维",
+            weight: "0g/m²",
+            width: "0cm",
+            color: "多种颜色",
+            imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=1200&auto=format&fit=crop"
+        });
     } catch (e) {
         fabrics = [...sampleFabrics];
         console.log('面料数据加载失败，使用默认数据，数据条数:', fabrics.length);
@@ -2819,10 +2962,12 @@ function selectDynamicName(name, type) {
 // 工具：根据名称简单推断类别
 function inferCategoryByName(name) {
     const n = (name || '').toLowerCase();
-    const woodKeywords = ['木', '实木', '人造板', '板', '竹', '橡木'];
+    const woodKeywords = ['木', '实木', '人造板', '板', '竹', '橡木', '橡胶木', '胡桃木'];
+    const metalKeywords = ['铁', '钢', '铝', '金属', '不锈钢'];
     const foamKeywords = ['海绵', '泡沫', '聚氨酯', '记忆棉', '乳胶'];
     
     if (woodKeywords.some(k => n.includes(k))) return 'wood';
+    if (metalKeywords.some(k => n.includes(k))) return 'metal';
     if (foamKeywords.some(k => n.includes(k))) return 'foam';
     return 'fabric';
 }
@@ -5467,6 +5612,7 @@ function formatMaterialLink(materialName, materialType) {
     
     // 查找匹配的材质
     const matchedMaterial = findMatchingMaterial(materialName, materialType);
+    
     if (matchedMaterial) {
         return `<a href="#" onclick="navigateToMaterial('${matchedMaterial.id}')" class="material-link" title="点击查看材质详情">${materialName}</a>`;
     }
@@ -5477,18 +5623,35 @@ function formatMaterialLink(materialName, materialType) {
 
 // 格式化面料链接
 function formatFabricLink(fabricName) {
+    console.log('formatFabricLink 被调用，面料名称:', fabricName);
+    
     if (!fabricName || fabricName.trim() === '' || fabricName === '未填写') {
         return '未填写';
     }
     
-    // 查找匹配的面料
-    const matchedFabric = findMatchingFabric(fabricName);
-    if (matchedFabric) {
-        return `<a href="#" onclick="navigateToFabric('${matchedFabric.id}')" class="material-link" title="点击查看面料详情">${fabricName}</a>`;
-    }
+    // 处理复合面料名称（用逗号分隔）
+    const fabricNames = fabricName.split(/[,，]/).map(name => name.trim()).filter(name => name);
     
-    // 如果没有找到匹配的面料，显示普通文本
-    return fabricName;
+    if (fabricNames.length === 1) {
+        // 单个面料名称，从材质字典中查找
+        const matchedMaterial = findMatchingMaterial(fabricName, 'fabric');
+        console.log('单个面料匹配结果:', matchedMaterial);
+        if (matchedMaterial) {
+            return `<a href="#" onclick="navigateToMaterial('${matchedMaterial.id}')" class="material-link" title="点击查看材质详情">${fabricName}</a>`;
+        }
+        return fabricName;
+    } else {
+        // 多个面料名称，尝试匹配每一个
+        const linkedNames = fabricNames.map(name => {
+            const matchedMaterial = findMatchingMaterial(name, 'fabric');
+            console.log(`面料"${name}"匹配结果:`, matchedMaterial);
+            if (matchedMaterial) {
+                return `<a href="#" onclick="navigateToMaterial('${matchedMaterial.id}')" class="material-link" title="点击查看材质详情">${name}</a>`;
+            }
+            return name;
+        });
+        return linkedNames.join(', ');
+    }
 }
 
 // 查找匹配的面料
@@ -5497,13 +5660,30 @@ function findMatchingFabric(fabricName) {
     if (!searchName) return null;
     
     const getCode = (f) => ((f && f.code) ? f.code.toString().trim().toLowerCase() : '');
+    const getName = (f) => ((f && f.name) ? f.name.toString().trim().toLowerCase() : '');
     
-    // 首先精确匹配
-    let matched = fabrics.find(f => getCode(f) === searchName);
+    // 首先精确匹配面料名称
+    let matched = fabrics.find(f => getName(f) === searchName);
+    if (matched) return matched;
+    
+    // 然后精确匹配面料型号
+    matched = fabrics.find(f => getCode(f) === searchName);
+    if (matched) return matched;
+    
+    // 然后模糊匹配面料名称
+    matched = fabrics.find(f => getName(f).includes(searchName));
     if (matched) return matched;
     
     // 然后模糊匹配面料型号
     matched = fabrics.find(f => getCode(f).includes(searchName));
+    if (matched) return matched;
+    
+    // 最后尝试部分匹配（面料名称包含搜索词）
+    matched = fabrics.find(f => searchName.includes(getName(f)));
+    if (matched) return matched;
+    
+    // 最后尝试部分匹配（面料型号包含搜索词）
+    matched = fabrics.find(f => searchName.includes(getCode(f)));
     if (matched) return matched;
     
     return null;
@@ -5511,26 +5691,33 @@ function findMatchingFabric(fabricName) {
 
 // 导航到面料详情页面
 function navigateToFabric(fabricId) {
-    // 添加加载状态到所有材质链接
-    document.querySelectorAll('.material-link').forEach(link => {
-        link.classList.add('loading');
-    });
-    
+    // 检查当前是否在产品卖点页面
+    if (currentPage === 'highlights') {
+        // 在产品卖点页面，显示侧边预览
+        showFabricPreview(parseInt(fabricId));
+    } else {
+        // 在其他页面，跳转到面料字典页面
+        // 添加加载状态到所有材质链接
+        document.querySelectorAll('.material-link').forEach(link => {
+            link.classList.add('loading');
+        });
+        
     // 关闭当前的产品卖点详情模态框
     closeHighlightModal();
     
     // 切换到面料字典页面
     switchPage('fabrics');
     
-    // 延迟显示面料详情，确保页面已切换
+        // 延迟显示面料详情，确保页面已切换
     setTimeout(() => {
-        showFabricDetail(parseInt(fabricId));
-        
-        // 移除加载状态
-        document.querySelectorAll('.material-link').forEach(link => {
-            link.classList.remove('loading');
-        });
+            showFabricDetail(parseInt(fabricId));
+            
+            // 移除加载状态
+            document.querySelectorAll('.material-link').forEach(link => {
+                link.classList.remove('loading');
+            });
     }, 100);
+    }
 }
 
 // 填充材质选择框
@@ -5660,7 +5847,7 @@ function populateFabricSelects() {
 function findMatchingMaterial(materialName, materialType) {
     const searchName = materialName.toLowerCase().trim();
     
-    // 首先精确匹配
+    // 首先精确匹配（包含类型）
     let matched = materials.find(m => 
         m.name.toLowerCase() === searchName && 
         m.category === materialType
@@ -5668,7 +5855,7 @@ function findMatchingMaterial(materialName, materialType) {
     
     if (matched) return matched;
     
-    // 然后模糊匹配
+    // 然后模糊匹配（包含类型）
     matched = materials.find(m => 
         m.name.toLowerCase().includes(searchName) && 
         m.category === materialType
@@ -5676,10 +5863,32 @@ function findMatchingMaterial(materialName, materialType) {
     
     if (matched) return matched;
     
-    // 最后尝试部分匹配（材质名称包含搜索词）
+    // 最后尝试部分匹配（材质名称包含搜索词，包含类型）
     matched = materials.find(m => 
         searchName.includes(m.name.toLowerCase()) && 
         m.category === materialType
+    );
+    
+    if (matched) return matched;
+    
+    // 如果按类型匹配失败，尝试忽略类型进行匹配
+    // 精确匹配（忽略类型）
+    matched = materials.find(m => 
+        m.name.toLowerCase() === searchName
+    );
+    
+    if (matched) return matched;
+    
+    // 模糊匹配（忽略类型）
+    matched = materials.find(m => 
+        m.name.toLowerCase().includes(searchName)
+    );
+    
+    if (matched) return matched;
+    
+    // 部分匹配（忽略类型）
+    matched = materials.find(m => 
+        searchName.includes(m.name.toLowerCase())
     );
     
     return matched;
@@ -5687,26 +5896,191 @@ function findMatchingMaterial(materialName, materialType) {
 
 // 导航到材质详情页面
 function navigateToMaterial(materialId) {
-    // 添加加载状态到所有材质链接
-    document.querySelectorAll('.material-link').forEach(link => {
-        link.classList.add('loading');
-    });
-    
+    console.log('navigateToMaterial 被调用，材质ID:', materialId);
+    // 检查当前是否在产品卖点页面
+    if (currentPage === 'highlights') {
+        // 在产品卖点页面，显示侧边预览
+        console.log('显示材质预览，ID:', materialId);
+        showMaterialPreview(parseInt(materialId));
+    } else {
+        // 在其他页面，跳转到材质字典页面
+        // 添加加载状态到所有材质链接
+        document.querySelectorAll('.material-link').forEach(link => {
+            link.classList.add('loading');
+        });
+        
     // 关闭当前的产品卖点详情模态框
     closeHighlightModal();
     
     // 切换到材质字典页面
     switchPage('materials');
     
-    // 延迟显示材质详情，确保页面已切换
+        // 延迟显示材质详情，确保页面已切换
     setTimeout(() => {
-        showMaterialDetail(parseInt(materialId));
-        
-        // 移除加载状态
-        document.querySelectorAll('.material-link').forEach(link => {
-            link.classList.remove('loading');
-        });
+            showMaterialDetail(parseInt(materialId));
+            
+            // 移除加载状态
+            document.querySelectorAll('.material-link').forEach(link => {
+                link.classList.remove('loading');
+            });
     }, 100);
+    }
+}
+
+// 显示材质侧边预览
+function showMaterialPreview(materialId) {
+    const material = materials.find(m => m.id === materialId);
+    if (!material) {
+        console.error('Material not found for id:', materialId);
+        return;
+    }
+    
+    const previewPanel = document.getElementById('materialPreviewPanel');
+    const previewTitle = document.getElementById('previewTitle');
+    const previewContent = document.getElementById('previewContent');
+    
+    if (!previewPanel || !previewTitle || !previewContent) {
+        console.error('Preview panel elements not found');
+        return;
+    }
+    
+    // 更新标题
+    previewTitle.textContent = material.name;
+    
+    // 生成预览内容
+    previewContent.innerHTML = `
+        ${material.imageUrl ? `
+            <div class="preview-material-image">
+                <img src="${material.imageUrl}" alt="${material.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                <div class="no-image" style="display: none;">
+                    <i class="fas fa-image" style="font-size: 2rem; color: #dee2e6;"></i>
+                </div>
+            </div>
+        ` : `
+            <div class="preview-material-image">
+                <div class="no-image">
+                    <i class="fas fa-image" style="font-size: 2rem; color: #dee2e6;"></i>
+                </div>
+            </div>
+        `}
+        
+        <div class="preview-material-detail">
+            <h4>材质描述</h4>
+            <p>${material.description || '暂无描述'}</p>
+            
+            <h4>主要特性</h4>
+            <div class="preview-detail-tags">
+                ${material.features.map(feature => 
+                    `<span class="preview-detail-tag">${feature}</span>`
+                ).join('')}
+            </div>
+        </div>
+    `;
+    
+    // 显示预览面板
+    previewPanel.style.display = 'flex';
+    
+    // 添加动画效果
+    previewPanel.style.opacity = '0';
+    previewPanel.style.transform = 'translateX(20px)';
+    
+    setTimeout(() => {
+        previewPanel.style.transition = 'all 0.3s ease';
+        previewPanel.style.opacity = '1';
+        previewPanel.style.transform = 'translateX(0)';
+    }, 10);
+}
+
+// 关闭材质侧边预览
+function closeMaterialPreview() {
+    const previewPanel = document.getElementById('materialPreviewPanel');
+    if (!previewPanel) return;
+    
+    // 添加关闭动画
+    previewPanel.style.transition = 'all 0.3s ease';
+    previewPanel.style.opacity = '0';
+    previewPanel.style.transform = 'translateX(20px)';
+    
+    setTimeout(() => {
+        previewPanel.style.display = 'none';
+        previewPanel.style.transition = '';
+        previewPanel.style.opacity = '';
+        previewPanel.style.transform = '';
+    }, 300);
+}
+
+// 显示面料侧边预览
+function showFabricPreview(fabricId) {
+    const fabric = fabrics.find(f => f.id === fabricId);
+    if (!fabric) {
+        console.error('Fabric not found for id:', fabricId);
+        return;
+    }
+    
+    const previewPanel = document.getElementById('materialPreviewPanel');
+    const previewTitle = document.getElementById('previewTitle');
+    const previewContent = document.getElementById('previewContent');
+    
+    if (!previewPanel || !previewTitle || !previewContent) {
+        console.error('Preview panel elements not found');
+        return;
+    }
+    
+    // 更新标题
+    previewTitle.textContent = fabric.name;
+    
+    // 生成预览内容
+    previewContent.innerHTML = `
+        ${fabric.imageUrl ? `
+            <div class="preview-material-image">
+                <img src="${fabric.imageUrl}" alt="${fabric.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                <div class="no-image" style="display: none;">
+                    <i class="fas fa-image" style="font-size: 2rem; color: #dee2e6;"></i>
+                </div>
+            </div>
+        ` : `
+            <div class="preview-material-image">
+                <div class="no-image">
+                    <i class="fas fa-image" style="font-size: 2rem; color: #dee2e6;"></i>
+                </div>
+            </div>
+        `}
+        
+        <div class="preview-material-detail">
+            <h4>面料描述</h4>
+            <p>${fabric.description || '暂无描述'}</p>
+            
+            <h4>主要特性</h4>
+            <div class="preview-detail-tags">
+                ${fabric.features.map(feature => 
+                    `<span class="preview-detail-tag">${feature}</span>`
+                ).join('')}
+            </div>
+            
+            ${fabric.composition ? `
+                <h4>成分</h4>
+                <p>${fabric.composition}</p>
+            ` : ''}
+            
+            ${fabric.color ? `
+                <h4>颜色</h4>
+                <p>${fabric.color}</p>
+            ` : ''}
+        </div>
+    `;
+    
+    // 显示预览面板
+    previewPanel.style.display = 'flex';
+    
+    // 添加动画效果
+    previewPanel.style.opacity = '0';
+    previewPanel.style.transform = 'translateX(20px)';
+    
+    setTimeout(() => {
+        previewPanel.style.transition = 'all 0.3s ease';
+        previewPanel.style.opacity = '1';
+        previewPanel.style.transform = 'translateX(0)';
+    }, 10);
 }
 
 // 打开办公椅配件页面
@@ -5986,6 +6360,9 @@ function applyHighlightFilters() {
 
 // 显示产品卖点详情
 function showHighlightDetail(highlightId) {
+    // 关闭侧边预览面板
+    closeMaterialPreview();
+    
     const highlight = highlights.find(h => h.id === highlightId);
     if (!highlight) return;
     
@@ -6017,14 +6394,14 @@ function showHighlightDetail(highlightId) {
             ` : isChildrenChairCategory(highlight.category) ? `
                 <p><strong>面料材质：</strong>${formatFabricLink(highlight.fabricMaterial)}</p>
                 <p><strong>脚材质：</strong>${formatMaterialLink(highlight.legMaterial, 'wood')}</p>
-                <p><strong>海绵材质：</strong>${formatMaterialLink(highlight.spongeMaterial, 'fabric')}</p>
+                <p><strong>海绵材质：</strong>${formatMaterialLink(highlight.spongeMaterial, 'foam')}</p>
                 <p><strong>框架材质：</strong>${formatMaterialLink(highlight.frameMaterial, 'wood')}</p>
                 <p><strong>适用年龄段：</strong>${highlight.ageRange || '未填写'}</p>
                 <p><strong>功能：</strong>${highlight.function || '未填写'}</p>
             ` : `
                 <p><strong>面料材质：</strong>${formatFabricLink(highlight.fabricMaterial)}</p>
                 <p><strong>脚材质：</strong>${formatMaterialLink(highlight.legMaterial, 'wood')}</p>
-                <p><strong>海绵材质：</strong>${formatMaterialLink(highlight.spongeMaterial, 'fabric')}</p>
+                <p><strong>海绵材质：</strong>${formatMaterialLink(highlight.spongeMaterial, 'foam')}</p>
                 <p><strong>框架材质：</strong>${formatMaterialLink(highlight.frameMaterial, 'wood')}</p>
                 <p><strong>功能：</strong>${highlight.function || '未填写'}</p>
             `}
