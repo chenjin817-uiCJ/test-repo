@@ -150,6 +150,13 @@ const sampleMaterials = [
         description: "天然石材，质感丰富，坚固耐用，适合台面和装饰",
         features: ["天然", "坚固耐用", "质感丰富", "易清洁"],
         imageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1200&auto=format&fit=crop"
+    },
+    {
+        id: 8,
+        name: "橡胶木",
+        description: "橡胶木材质，质地坚硬，纹理清晰，环保可持续，适合制作家具",
+        features: ["环保", "坚硬", "纹理清晰", "可持续"],
+        imageUrl: "https://images.unsplash.com/photo-1505692952047-1a78307da8f2?q=80&w=1200&auto=format&fit=crop"
     }
 ];
 
@@ -5504,15 +5511,25 @@ function findMatchingFabric(fabricName) {
 
 // 导航到面料详情页面
 function navigateToFabric(fabricId) {
+    // 添加加载状态到所有材质链接
+    document.querySelectorAll('.material-link').forEach(link => {
+        link.classList.add('loading');
+    });
+    
     // 关闭当前的产品卖点详情模态框
     closeHighlightModal();
     
     // 切换到面料字典页面
     switchPage('fabrics');
     
-    // 等待页面切换完成后显示面料详情
+    // 延迟显示面料详情，确保页面已切换
     setTimeout(() => {
-        showFabricDetail(fabricId);
+        showFabricDetail(parseInt(fabricId));
+        
+        // 移除加载状态
+        document.querySelectorAll('.material-link').forEach(link => {
+            link.classList.remove('loading');
+        });
     }, 100);
 }
 
@@ -5670,15 +5687,25 @@ function findMatchingMaterial(materialName, materialType) {
 
 // 导航到材质详情页面
 function navigateToMaterial(materialId) {
+    // 添加加载状态到所有材质链接
+    document.querySelectorAll('.material-link').forEach(link => {
+        link.classList.add('loading');
+    });
+    
     // 关闭当前的产品卖点详情模态框
     closeHighlightModal();
     
     // 切换到材质字典页面
     switchPage('materials');
     
-    // 等待页面切换完成后显示材质详情
+    // 延迟显示材质详情，确保页面已切换
     setTimeout(() => {
-        showMaterialDetail(materialId);
+        showMaterialDetail(parseInt(materialId));
+        
+        // 移除加载状态
+        document.querySelectorAll('.material-link').forEach(link => {
+            link.classList.remove('loading');
+        });
     }, 100);
 }
 
