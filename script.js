@@ -542,8 +542,8 @@ const sampleDesignPointCategories = [
 ];
 
 // 初始化应用
-document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
+document.addEventListener('DOMContentLoaded', async function() {
+    await initializeApp();
     setupEventListeners();
     
     // 添加全局图片点击事件委托
@@ -573,8 +573,104 @@ document.addEventListener('DOMContentLoaded', function() {
     
 });
 
+// 从当前服务器自动加载数据（如果通过服务器访问）
+async function autoLoadDataFromServer() {
+    // 检查是否通过服务器访问（不是 file:// 协议）
+    if (window.location.protocol === 'file:') {
+        console.log('本地文件访问，跳过服务器数据加载');
+        return false;
+    }
+    
+    // 获取当前页面的 origin 作为服务器地址
+    const serverUrl = window.location.origin;
+    console.log('检测到服务器访问，尝试从服务器加载数据:', serverUrl);
+    
+    try {
+        const response = await fetch(`${serverUrl}/api/data`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`服务器响应错误: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error || '服务器返回错误');
+        }
+        
+        const serverData = result.data;
+        console.log('从服务器加载数据成功:', {
+            fabrics: serverData.fabrics?.length || 0,
+            colorboards: serverData.colorboards?.length || 0,
+            highlights: serverData.highlights?.length || 0,
+            materials: serverData.materials?.length || 0,
+            materialOptions: serverData.materialOptions?.length || 0,
+            designPointCategories: serverData.designPointCategories?.length || 0,
+            productCategories: serverData.productCategories?.length || 0
+        });
+        
+        // 用服务器数据替换本地数据（完全替换，不合并）
+        if (serverData.materials && Array.isArray(serverData.materials)) {
+            materials = serverData.materials.map(m => ({
+                ...m,
+                category: m.category || inferCategoryByName(m.name)
+            }));
+            try { localStorage.setItem('materials_v1', JSON.stringify(materials)); } catch (_) {}
+        }
+        
+        if (serverData.fabrics && Array.isArray(serverData.fabrics)) {
+            fabrics = serverData.fabrics;
+            try { localStorage.setItem('fabrics_v1', JSON.stringify(fabrics)); } catch (_) {}
+        }
+        
+        if (serverData.colorboards && Array.isArray(serverData.colorboards)) {
+            colorboards = serverData.colorboards;
+            try { localStorage.setItem('colorboards_v1', JSON.stringify(colorboards)); } catch (_) {}
+        }
+        
+        if (serverData.highlights && Array.isArray(serverData.highlights)) {
+            highlights = serverData.highlights;
+            try { localStorage.setItem('highlights_v1', JSON.stringify(highlights)); } catch (_) {}
+        }
+        
+        if (serverData.materialOptions && Array.isArray(serverData.materialOptions)) {
+            materialOptions = serverData.materialOptions;
+            try { localStorage.setItem('materialOptions_v1', JSON.stringify(materialOptions)); } catch (_) {}
+        }
+        
+        if (serverData.designPointCategories && Array.isArray(serverData.designPointCategories)) {
+            designPointCategories = serverData.designPointCategories;
+            try { localStorage.setItem('designPointCategories_v1', JSON.stringify(designPointCategories)); } catch (_) {}
+        }
+        
+        if (serverData.productCategories && Array.isArray(serverData.productCategories)) {
+            productCategories = serverData.productCategories;
+            try { localStorage.setItem('productCategories_v1', JSON.stringify(productCategories)); } catch (_) {}
+        }
+        
+        console.log('服务器数据已加载并保存到 localStorage');
+        return true;
+        
+    } catch (error) {
+        console.warn('从服务器自动加载数据失败，将使用 localStorage 数据:', error.message);
+        return false;
+    }
+}
+
 // 初始化应用
-function initializeApp() {
+async function initializeApp() {
+    // 如果通过服务器访问，先尝试从服务器加载数据
+    const serverDataLoaded = await autoLoadDataFromServer();
+    
+    // 如果服务器数据加载成功，说明服务器是数据源，使用服务器数据
+    // 如果服务器数据加载失败，使用本地 localStorage 数据
+    // 注意：如果用户在本地修改了数据，这些修改会在保存时自动上传到服务器
+    
     // 初始化材质数据
     try {
         const stored = localStorage.getItem('materials_v1');
@@ -2979,18 +3075,74 @@ function inferCategoryByName(name) {
 // 加载选项数据
 function loadOptions() {
     try {
+        // 先尝试从文件加载最新数据
+        loadMaterialOptionsFromFile();
+        
+        // 如果文件加载失败，则从localStorage加载
         const saved = localStorage.getItem('materialOptions_v1');
-        if (saved) {
+        if (saved && materialOptions.length === 0) {
             materialOptions = JSON.parse(saved);
-        } else {
+        } else if (materialOptions.length === 0) {
             materialOptions = [...sampleOptions];
             saveOptions();
         }
+        
     } catch (e) {
+        console.error('加载选项数据失败:', e);
         materialOptions = [...sampleOptions];
         saveOptions();
     }
     filteredOptions = [...materialOptions];
+}
+
+// 从文件加载材质选项数据
+function loadMaterialOptionsFromFile() {
+    try {
+        // 使用fetch加载materialOptions.json文件，添加时间戳避免缓存
+        fetch('./data/materialOptions.json?t=' + Date.now())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(fileData => {
+                console.log('从文件加载的材质选项数据:', fileData);
+                if (fileData && Array.isArray(fileData)) {
+                    console.log('文件中的材质选项数量:', fileData.length);
+                    console.log('当前内存中的材质选项数量:', materialOptions.length);
+                    
+                    // 完全替换现有数据，而不是合并
+                    materialOptions = [...fileData];
+                    saveOptions();
+                    console.log(`已更新材质选项数据，总数: ${materialOptions.length}`);
+                    
+                    // 重新填充材质选择框
+                    populateMaterialSelects();
+                }
+            })
+            .catch(error => {
+                console.error('无法从文件加载材质选项数据:', error);
+                // 如果文件加载失败，尝试从localStorage加载
+                const saved = localStorage.getItem('materialOptions_v1');
+                if (saved) {
+                    materialOptions = JSON.parse(saved);
+                    populateMaterialSelects();
+                }
+            });
+    } catch (error) {
+        console.error('加载材质选项文件失败:', error);
+    }
+}
+
+// 强制刷新脚材质选择框（从材质字典获取）
+function forceRefreshLegMaterialSelects() {
+    console.log('强制刷新脚材质选择框（从材质字典获取）...');
+    
+    // 重新填充材质选择框（使用材质字典数据）
+    populateMaterialSelects();
+    
+    console.log('强制刷新完成，材质字典数量:', materials.length);
 }
 
 // 保存选项数据
@@ -3000,7 +3152,12 @@ function saveOptions() {
 
 // 兼容：供同步/导入流程调用的保存函数
 function saveMaterialOptions() {
-    try { localStorage.setItem('materialOptions_v1', JSON.stringify(materialOptions)); } catch (_) {}
+    try { 
+        localStorage.setItem('materialOptions_v1', JSON.stringify(materialOptions)); 
+        
+        // 如果通过服务器访问，自动上传到服务器
+        autoUploadToServer();
+    } catch (_) {}
 }
 
 // 渲染选项列表
@@ -3397,7 +3554,54 @@ function saveMaterials() {
             return material;
         });
         localStorage.setItem('materials_v1', JSON.stringify(cleanedMaterials)); 
+        
+        // 如果通过服务器访问，自动上传到服务器
+        autoUploadToServer();
     } catch (_) {}
+}
+
+// 自动上传数据到服务器（如果通过服务器访问）
+async function autoUploadToServer(silent = true) {
+    // 检查是否通过服务器访问（不是 file:// 协议）
+    if (window.location.protocol === 'file:') {
+        return false;
+    }
+    
+    // 获取当前页面的 origin 作为服务器地址
+    const serverUrl = window.location.origin;
+    
+    try {
+        const dataToUpload = {
+            fabrics: fabrics,
+            colorboards: colorboards,
+            highlights: highlights,
+            materials: materials,
+            materialOptions: materialOptions,
+            designPointCategories: designPointCategories,
+            productCategories: productCategories
+        };
+        
+        const response = await fetch(`${serverUrl}/api/data`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ data: dataToUpload })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                console.log('数据已自动同步到服务器');
+                return true;
+            }
+        }
+    } catch (error) {
+        // 静默失败，不显示错误提示
+        console.warn('自动同步到服务器失败:', error.message);
+    }
+    
+    return false;
 }
 
 // 保存面料到本地存储
@@ -3430,6 +3634,9 @@ function saveFabrics() {
         
         // 更新内存中的数据
         fabrics = cleanedFabrics;
+        
+        // 如果通过服务器访问，自动上传到服务器
+        autoUploadToServer();
         
     } catch (error) {
         console.error('保存面料数据失败:', error);
@@ -3476,6 +3683,9 @@ function saveColorboards() {
         
         // 更新内存中的数据
         colorboards = cleanedColorboards;
+        
+        // 如果通过服务器访问，自动上传到服务器
+        autoUploadToServer();
         
     } catch (error) {
         console.error('保存色板数据失败:', error);
@@ -5732,10 +5942,17 @@ function populateMaterialSelects() {
         return;
     }
     
-    // 获取材质选项
-    const fabricOptions = materialOptions.filter(opt => opt.category === 'fabric');
-    const foamOptions = materialOptions.filter(opt => opt.category === 'foam');
-    const woodOptions = materialOptions.filter(opt => opt.category === 'wood');
+    console.log('开始填充材质选择框，当前材质字典数量:', materials.length);
+    
+    // 获取材质选项（从材质字典获取）
+    const fabricOptions = materials.filter(mat => mat.category === 'fabric');
+    const foamOptions = materials.filter(mat => mat.category === 'foam');
+    const woodOptions = materials.filter(mat => mat.category === 'wood');
+    
+    console.log('材质选项统计（从材质字典获取）:');
+    console.log('- 面料材质:', fabricOptions.length, fabricOptions.map(mat => mat.name));
+    console.log('- 海绵材质:', foamOptions.length, foamOptions.map(mat => mat.name));
+    console.log('- 木头材质:', woodOptions.length, woodOptions.map(mat => mat.name));
     
     // 填充面料材质选择框
     const fabricSelects = [
@@ -5749,10 +5966,10 @@ function populateMaterialSelects() {
         if (select) {
             // 清空现有选项（保留第一个默认选项）
             select.innerHTML = '<option value="">请选择面料材质</option>';
-            fabricOptions.forEach(option => {
+            fabricOptions.forEach(material => {
                 const optionElement = document.createElement('option');
-                optionElement.value = option.name;
-                optionElement.textContent = option.name;
+                optionElement.value = material.name;
+                optionElement.textContent = material.name;
                 select.appendChild(optionElement);
             });
         }
@@ -5769,30 +5986,45 @@ function populateMaterialSelects() {
         const select = document.getElementById(selectId);
         if (select) {
             select.innerHTML = '<option value="">请选择海绵材质</option>';
-            foamOptions.forEach(option => {
+            foamOptions.forEach(material => {
                 const optionElement = document.createElement('option');
-                optionElement.value = option.name;
-                optionElement.textContent = option.name;
+                optionElement.value = material.name;
+                optionElement.textContent = material.name;
                 select.appendChild(optionElement);
             });
         }
     });
     
-    // 填充脚材质选择框
+    // 填充脚材质选择框 - 从wood、metal、other三个类别获取选项
     const legSelects = [
         'addHighlightLegMaterial',
         'editHighlightLegMaterial',
         'addHighlightChildrenChairLegMaterial',
-        'editHighlightChildrenChairLegMaterial'
+        'editHighlightChildrenChairLegMaterial',
+        'addHighlightTableLegMaterial',
+        'editHighlightTableLegMaterial'
     ];
+    
+    // 获取脚材质选项（从材质字典中获取木头、金属、其他材质）
+    const woodMaterials = materials.filter(mat => mat.category === 'wood');
+    const metalMaterials = materials.filter(mat => mat.category === 'metal');
+    const otherMaterials = materials.filter(mat => mat.category === 'other');
+    const legMaterialOptions = [...woodMaterials, ...metalMaterials, ...otherMaterials];
+    
+    console.log('脚材质选项统计（从材质字典获取）:');
+    console.log('- 木头材质:', woodMaterials.length, woodMaterials.map(mat => mat.name));
+    console.log('- 金属材质:', metalMaterials.length, metalMaterials.map(mat => mat.name));
+    console.log('- 其他材质:', otherMaterials.length, otherMaterials.map(mat => mat.name));
+    console.log('- 脚材质总计:', legMaterialOptions.length, legMaterialOptions.map(mat => mat.name));
+    
     legSelects.forEach(selectId => {
         const select = document.getElementById(selectId);
         if (select) {
             select.innerHTML = '<option value="">请选择脚材质</option>';
-            woodOptions.forEach(option => {
+            legMaterialOptions.forEach(material => {
                 const optionElement = document.createElement('option');
-                optionElement.value = option.name;
-                optionElement.textContent = option.name;
+                optionElement.value = material.name;
+                optionElement.textContent = material.name;
                 select.appendChild(optionElement);
             });
         }
@@ -5809,10 +6041,10 @@ function populateMaterialSelects() {
         const select = document.getElementById(selectId);
         if (select) {
             select.innerHTML = '<option value="">请选择框架材质</option>';
-            woodOptions.forEach(option => {
+            woodOptions.forEach(material => {
                 const optionElement = document.createElement('option');
-                optionElement.value = option.name;
-                optionElement.textContent = option.name;
+                optionElement.value = material.name;
+                optionElement.textContent = material.name;
                 select.appendChild(optionElement);
             });
         }
@@ -5845,6 +6077,12 @@ function populateFabricSelects() {
     } catch (e) {
         console.warn('populateFabricSelects 调用失败:', e);
     }
+}
+
+// 手动刷新脚材质选择框
+function refreshLegMaterialSelects() {
+    console.log('手动刷新脚材质选择框...');
+    loadMaterialOptionsFromFile();
 }
 
 // 查找匹配的材质
@@ -6091,6 +6329,12 @@ function showFabricPreview(fabricId) {
 function openOfficeChairPage() {
     // 在新窗口中打开办公椅页面
     window.open('office-chair.html', '_blank');
+}
+
+// 打开元素库页面
+function openElementLibraryPage() {
+    // 在新窗口中打开元素库页面
+    window.open('element-library.html', '_blank');
 }
 
 // 设置产品卖点分类过滤
@@ -7207,12 +7451,22 @@ function closeHighlightUploadModal() {
 
 // 保存产品卖点到本地存储
 function saveHighlights() {
-    try { localStorage.setItem('highlights_v1', JSON.stringify(highlights)); } catch (_) {}
+    try { 
+        localStorage.setItem('highlights_v1', JSON.stringify(highlights)); 
+        
+        // 如果通过服务器访问，自动上传到服务器
+        autoUploadToServer();
+    } catch (_) {}
 }
 
 // 保存设计点分类数据
 function saveDesignPointCategories() {
-    try { localStorage.setItem('designPointCategories_v1', JSON.stringify(designPointCategories)); } catch (_) {}
+    try { 
+        localStorage.setItem('designPointCategories_v1', JSON.stringify(designPointCategories)); 
+        
+        // 如果通过服务器访问，自动上传到服务器
+        autoUploadToServer();
+    } catch (_) {}
 }
 
 // ==================== 设计点管理功能 ====================
@@ -9027,6 +9281,9 @@ function updateProductCategorySelectors() {
 function saveProductCategories() {
     try {
         localStorage.setItem('productCategories_v1', JSON.stringify(productCategories));
+        
+        // 如果通过服务器访问，自动上传到服务器
+        autoUploadToServer();
     } catch (error) {
         console.error('保存产品分类失败:', error);
     }
@@ -10514,10 +10771,18 @@ async function downloadFromServer() {
 
 // 上传数据到服务器
 async function uploadToServer(silent = false) {
-    const serverUrl = getSyncServerUrl();
-    if (!serverUrl) {
-        showSyncNotification('请先设置服务器地址', 'error');
-        return false;
+    // 如果通过服务器访问，直接使用当前页面的 origin
+    // 否则从输入框获取服务器地址
+    let serverUrl;
+    if (window.location.protocol !== 'file:') {
+        serverUrl = window.location.origin;
+        console.log('通过服务器访问，使用当前 origin:', serverUrl);
+    } else {
+        serverUrl = getSyncServerUrl();
+        if (!serverUrl) {
+            showSyncNotification('请先设置服务器地址', 'error');
+            return false;
+        }
     }
     
     try {
@@ -10565,29 +10830,43 @@ async function uploadToServer(silent = false) {
         }
         
         console.log('服务器响应:', result);
+        console.log('服务器消息:', result.message || '');
+        console.log('数据更新统计:', result.data?.updated || {});
         
         lastSyncTime = new Date();
         updateSyncStatus('online', '上传完成');
         
         // 检查是否有实际的数据变化
         if (result.data && result.data.updated) {
-            const updatedCount = (result.data.updated.fabrics || 0) + (result.data.updated.colorboards || 0) + 
-                               (result.data.updated.highlights || 0) + (result.data.updated.materials || 0) + 
-                               (result.data.updated.materialOptions || 0) + (result.data.updated.designPointCategories || 0) + 
-                               (result.data.updated.productCategories || 0);
+            let hasAnyChanges = false;
+            let updatedCount = 0;
+            const updated = result.data.updated;
+            
+            // 检查每个数据类型是否有变化
+            Object.keys(updated).forEach(key => {
+                const value = updated[key];
+                if (typeof value === 'number' && value !== 0) {
+                    hasAnyChanges = true;
+                    updatedCount += Math.abs(value);
+                } else if (typeof value === 'string' && value === 'changed') {
+                    hasAnyChanges = true;
+                    updatedCount += 1; // 内容变化但长度相同，也算作有更新
+                }
+            });
             
             console.log('服务器返回的更新统计:', result.data.updated);
+            console.log('是否有变化:', hasAnyChanges);
             console.log('总更新数量:', updatedCount);
             
-            if (updatedCount > 0) {
+            if (hasAnyChanges) {
                 if (!silent) {
-                    showSyncNotification(`数据上传成功！更新了${updatedCount}条数据`);
+                    showSyncNotification(`数据上传成功！已同步到服务器`);
                 }
             } else {
                 if (!silent) {
-                    showSyncNotification('数据已是最新，无需上传', 'info');
+                    showSyncNotification('数据已保存到服务器', 'success');
                 }
-                console.log('数据已是最新，无需上传');
+                console.log('数据已保存到服务器');
             }
         } else {
             // 如果没有服务器响应信息，根据本地数据判断

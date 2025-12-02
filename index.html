@@ -310,6 +310,9 @@
                 <button class="nav-btn" onclick="openOfficeChairPage()">
                     <i class="fas fa-chair"></i> 办公椅配件
                 </button>
+                <button class="nav-btn" onclick="openElementLibraryPage()">
+                    <i class="fas fa-cube"></i> 元素库
+                </button>
                 <button class="nav-btn" onclick="showDataSyncModal()">
                     <i class="fas fa-sync-alt"></i> 数据同步
                 </button>
@@ -2078,5 +2081,15 @@
 
     <script src="xlsx.full.min.js"></script>
     <script src="script.js?v=2"></script>
+    
+    <!-- 调试按钮 -->
+    <div style="position: fixed; bottom: 10px; right: 10px; z-index: 9999;">
+        <button onclick="refreshLegMaterialSelects()" style="background: #007bff; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+            刷新脚材质选项
+        </button>
+        <button onclick="forceRefreshLegMaterialSelects()" style="background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer;">
+            强制刷新
+        </button>
+    </div>
 </body>
 </html>
