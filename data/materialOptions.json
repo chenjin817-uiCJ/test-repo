@@ -1,5 +1,85 @@
 [
   {
+    "id": 8,
+    "category": "wood",
+    "name": "橡木"
+  },
+  {
+    "id": 9,
+    "category": "wood",
+    "name": "胡桃木"
+  },
+  {
+    "id": 1760520803228,
+    "category": "wood",
+    "name": "多层板"
+  },
+  {
+    "id": 1760520775524,
+    "category": "wood",
+    "name": "橡胶木"
+  },
+  {
+    "id": 1760521000011,
+    "category": "wood",
+    "name": "MDF贴白蜡"
+  },
+  {
+    "id": 1760521000012,
+    "category": "wood",
+    "name": "人造板"
+  },
+  {
+    "id": 1760521000001,
+    "category": "metal",
+    "name": "不锈钢"
+  },
+  {
+    "id": 1760521000002,
+    "category": "metal",
+    "name": "铝合金"
+  },
+  {
+    "id": 1760521000003,
+    "category": "metal",
+    "name": "铁"
+  },
+  {
+    "id": 1760521000004,
+    "category": "metal",
+    "name": "碳钢"
+  },
+  {
+    "id": 1760521000005,
+    "category": "metal",
+    "name": "铜"
+  },
+  {
+    "id": 1760521000006,
+    "category": "other",
+    "name": "塑料"
+  },
+  {
+    "id": 1760521000007,
+    "category": "other",
+    "name": "玻璃"
+  },
+  {
+    "id": 1760521000008,
+    "category": "other",
+    "name": "石材"
+  },
+  {
+    "id": 1760521000009,
+    "category": "other",
+    "name": "陶瓷"
+  },
+  {
+    "id": 1760521000010,
+    "category": "other",
+    "name": "复合材料"
+  },
+  {
     "id": 1,
     "category": "foam",
     "name": "高密度海绵"
@@ -33,26 +113,6 @@
     "id": 7,
     "category": "fabric",
     "name": "真丝面料"
-  },
-  {
-    "id": 8,
-    "category": "wood",
-    "name": "橡木"
-  },
-  {
-    "id": 9,
-    "category": "wood",
-    "name": "胡桃木"
-  },
-  {
-    "id": 1760520803228,
-    "category": "wood",
-    "name": "多层板"
-  },
-  {
-    "id": 1760520775524,
-    "category": "wood",
-    "name": "橡胶木"
   },
   {
     "id": 1760520752349,

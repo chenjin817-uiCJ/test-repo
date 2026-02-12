@@ -1,9 +1,33 @@
 [
   {
     "id": 1,
-    "name": "外观设计",
-    "description": "产品外观相关的设计点",
-    "color": "#FF6B6B"
+    "name": "靠背设计",
+    "description": "",
+    "color": "#ff6b6b"
+  },
+  {
+    "id": 1760420106424,
+    "name": "座包设计",
+    "description": "",
+    "color": "#a66bff"
+  },
+  {
+    "id": 1760420469798,
+    "name": "脚设计",
+    "description": "",
+    "color": "#ffeb6b"
+  },
+  {
+    "id": 1760420520566,
+    "name": "扶手设计",
+    "description": "",
+    "color": "#6bff7c"
+  },
+  {
+    "id": 1760420932590,
+    "name": "安全设计",
+    "description": "",
+    "color": "#e708f7"
   },
   {
     "id": 2,
